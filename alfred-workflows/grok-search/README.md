@@ -1,6 +1,8 @@
 # Grok 快速搜索 Alfred 工作流
 
-这个工作流允许你通过 Alfred 快速打开 `grok.com` 并直接带入你的查询内容。
+> 极速在浏览器中打开 Grok 并自动带入搜索词，零外部依赖，支持中文。
+>
+> Blazing fast Alfred workflow to search on Grok.com with zero dependencies and full UTF-8 support.
 
 ## 如何在 Alfred 中配置
 
