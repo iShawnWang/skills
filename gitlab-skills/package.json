@@ -1,0 +1,14 @@
+{
+  "name": "gitlab-skill",
+  "version": "1.0.0",
+  "description": "GitLab 集成插件，支持查询用户信息、搜索仓库及合并分支",
+  "type": "module",
+  "scripts": {
+    "gitlab": "npx tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+# 用户配置（包含 Token，不能提交）
+.env.gitlab
+
+# Node.js
+node_modules/
+
+# TypeScript 编译产物
+dist/
+
+# macOS
+.DS_Store
