@@ -28,3 +28,8 @@
 ## 使用须知
 
 每个子目录下通常都包含 `SKILL.md`，提供了详细的 AI 调用指令和配置说明。在使用特定技能前，请先阅读相应的说明文件。
+
+---
+## 观望
+
+1. 技术文档写作 https://github.com/Fenng/tech-doc-style-chinese
