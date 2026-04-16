@@ -51,6 +51,9 @@ export interface GitLabMergeRequest {
   source_branch: string;
   target_branch: string;
   merge_error: string | null;
+  merge_status: "can_be_merged" | "unchecked" | "cannot_be_merged" | "cannot_be_merged_recheck" | "checking";
+  has_conflicts: boolean;
+  blocking_discussions_resolved: boolean;
   author: {
     id: number;
     username: string;

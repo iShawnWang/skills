@@ -109,14 +109,51 @@ export async function mergeBranches(
     process.exit(1);
   }
 
-  console.error(`Merge Request 已创建 (IID: ${mr.iid})。等待 5s 后尝试自动合并...`);
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-  console.error("正在尝试自动合并...");
+  console.error(`Merge Request 已创建 (IID: ${mr.iid})。正在轮询合并状态...`);
 
-  // 5. 接受（合并）Merge Request
+  // 5. 轮询合并状态，直到可以合并或出现冲突
+  let currentMr = mr;
+  let attempts = 0;
+  const maxAttempts = 15; // 最多等待 30s
+  while (attempts < maxAttempts) {
+    // 检查是否可以合并
+    // 注意: GitLab API 的 merge_status 可能在 'unchecked' 或 'checking'
+    if (currentMr.merge_status === "can_be_merged" && !currentMr.has_conflicts) {
+      console.error("状态检查通过，准备合并。");
+      break;
+    }
+
+    if (currentMr.has_conflicts || currentMr.merge_status === "cannot_be_merged") {
+      console.log(JSON.stringify({
+        success: false,
+        message: "合并失败，存在冲突或无法合并",
+        merge_status: currentMr.merge_status,
+        has_conflicts: currentMr.has_conflicts,
+        mr_url: mr.web_url,
+      }));
+      process.exit(1);
+    }
+
+    console.error(`当前状态: ${currentMr.merge_status}，等待 2s 后重试 (${attempts + 1}/${maxAttempts})...`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    currentMr = await client.get<GitLabMergeRequest>(`/projects/${projectId}/merge_requests/${mr.iid}`);
+    attempts++;
+  }
+
+  if (currentMr.merge_status !== "can_be_merged") {
+    console.error(`警告: 达到最大重试次数，当前状态仍为 ${currentMr.merge_status}。尝试强制执行合并...`);
+  }
+
+  console.error("正在发送合并请求...");
+
+  // 6. 接受（合并）Merge Request
   try {
     const mergeResult = await client.put<GitLabMergeRequest>(
-      `/projects/${projectId}/merge_requests/${mr.iid}/merge`
+      `/projects/${projectId}/merge_requests/${mr.iid}/merge`,
+      {
+        should_remove_source_branch: false,
+        merge_when_pipeline_succeeds: true, // 如果流水线在跑，等它跑完自动合
+      }
     );
 
     if (mergeResult.state === "merged") {
