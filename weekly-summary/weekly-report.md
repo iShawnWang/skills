@@ -1,69 +1,72 @@
 # 每周工作提交报告: 王帅 📊
 
-*统计时间: 2026-04-13 至 2026-04-20*
+*统计时间: 2026-04-16 至 2026-04-24*
 
 ## 📈 活动摘要
 
-- **总提交数**: 26
-- **活跃项目数**: 3
-- **预估变更**: +278 / -243 行 (来自已分析的提交)
+- **总提交数**: 31
+- **活跃项目数**: 1
+- **预估变更**: +649 / -307 行 (来自已分析的提交)
 
 ## 🚀 项目详细详情
 
-### yeqiao-mobile (24 条提交)
-*项目变更: +266 / -240*
+### yeqiao-mobile (31 条提交)
+*项目变更: +649 / -307*
 
-- **分支: master-h5_changeAddress** (19 条提交)
-  *分支变更: +145 / -112*
-  - feat: 上传组件props [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/a5c2e98a60a661ee94ab57793dfcaa434fcdeb67)
-  - chore: token [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/ade1cbcbf9b7a7438de28329fde2faf5d6ea75f7)
-  - feat: t [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/ff2b114d4875c05c77d6c5499a993aefc1be7e8e)
-  - chore: log [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/81938ffe5e69ef3762a38bc00e845dd465d816b8)
-  - feat: 跳转登录日志 (+1/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/979a4b9ef75858b1a06e5f668cca6aaa57268800)
-  - feat: 日志 (+1/-0) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/e471833c319a9891f33712b58fbf74a85fde0442)
-  - feat: 测试上报 (+2/-3) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/4a6e7c77ceac267fe613bdcf5eccf4405df2080d)
-  - feat: 401 (+10/-11) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/4fc1ada4eebdbf608f43043750877fcd43d8cc42)
-  - fix: store (+1/-0) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/c13a0456199bf12f18d8d2c43e88773ff40f5bc1)
-  - chore: log (+13/-10) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/3141af87682b57d52ccae0557ad468d7ac1f550b)
-  - fix: f (+0/-4) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/bb96ccb8e50b60ca63da4895ba6ca4931e903e57)
-  - feat: 401 (+16/-16) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/0454df3ae784e8c39176eae78b28ed1b4b480eb9)
-  - feat: 登录方法 usertoken (+5/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/dd937c17bc291e33cf57a2a223d32b57f97492b0)
-  - fix: 参数 (+4/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/1c4e700b4c218fba04b5df8eef93f6d6a1aa9b70)
-  - feat: 登录 token 传递 (+4/-3) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/15dfd20b534cd35dda76e2ee30cfb1c1fdb23eca)
-  - chore: 退出登录 (+10/-2) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/63efddb74b00461837d3d51d7d691dcd4a9eef3f)
-  - feat: app-admin (+18/-13) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/8803c7b5d573d24e91e9a2abe503d05c76d40c1c)
-  - chore: prefix (+12/-20) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/8481d387f15676093c6fda58701e79266976dbc4)
-  - feat: 替换地址 (+48/-27) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/ef6aa8b03a636f21efdb42ae972c6631c9e54d74)
+- **分支: master-h5_changeAddress** (17 条提交)
+  *分支变更: +459 / -254*
+  - **2026-04-24** (3 条提交)
+    - chore: remove unused [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/8c332174e50145e865eaeb7b58c20a0e6069cad3)
+    - chore: remove unused [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/38d3b8f50753f6ac0a5c1506faae6242e303d886)
+    - c (+2/-2) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/7d367a9b38d7c0765603de663bdf3afb288791de)
+  - **2026-04-23** (7 条提交)
+    - feat: 阿里云直传 (+20/-38) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/b41def53e867c075c55fa9caf2fb56b7aef2c9b8)
+    - feat: 前往支付 (+8/-8) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/e4821982126e4150f3867cf2a5ef6b04b485b4bc)
+    - feat: 打电话 (+3/-3) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/3b630ad1e3ca64ae94f6679ae0a262a7118ad123)
+    - test: img (+3/-0) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/f3e23c5fd2b1dcdf051deb062b5f084bde1d91c1)
+    - chore: ip (+1/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/f6888d5319ba44ff5ffd2cf15e6d97c242342a6f)
+    - feat: 上传 (+18/-15) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/2ff681e4d6bc37fde0c122d499a6d0585496f203)
+    - chore: 错误提示 (+7/-2) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/5d58b1bb908abffde685844f33519cf4cb63d558)
+  - **2026-04-21** (1 条提交)
+    - feat: 时间戳 (+1/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/90681215c5e2e87b62eaa6eee490c5e8228cb5a6)
+  - **2026-04-20** (5 条提交)
+    - chore: export (+8/-4) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/40dbaf4fb49c5fc03eb890f2f128cb1d80bd85d9)
+    - feat: export (+6/-5) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/f42df725026647477cfc07c0ab1db5a8581e1fc3)
+    - feat: model name (+142/-117) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/20a24be2eca0fd88a0227ac86182f668abec280d)
+    - feat: enum (+112/-0) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/01a8bf18f92ccf545be15dc4a2474a4b8ddcf74a)
+    - feat: 上传 (+120/-56) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/6449b69b1118fb0e248cf0c0ec5190c5610a62a8)
+  - **2026-04-17** (1 条提交)
+    - feat: 上传组件props (+8/-2) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/a5c2e98a60a661ee94ab57793dfcaa434fcdeb67)
 
-- **分支: master-mp-changeAddress** (3 条提交)
-  *分支变更: +117 / -127*
-  - feat: url (+4/-2) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/310cf0f357088471d32bbc8d6b6f322132672906)
-  - feat: 三方登录 (+20/-83) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/a59736e5b66d4aad5b85a02e063f826db9df8ea3)
-  - feat: 挪代码 (+93/-42) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/37bb23bb1fe68ccbf09707edcc3f189f616e5237)
+- **分支: master-mp-changeAddress** (7 条提交)
+  *分支变更: +190 / -53*
+  - **2026-04-24** (2 条提交)
+    - feat: 上传 [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/8f9f98622a9d7e0629808e39c5c3e7b5ea8732e2)
+    - chore: file name [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/14cad3485584bbd4131343d0b62b397231a8c3b0)
+  - **2026-04-23** (1 条提交)
+    - feat: 前往支付 (+8/-8) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/abe391c83cb21a16c55ca9ffb70264ee8a41fee1)
+  - **2026-04-21** (3 条提交)
+    - feat: 车库上传行驶证改造 (+162/-33) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/e0751270d0af68d0e075c67b2d9c6409b856da70)
+    - fix: 隐藏退出登录 (+1/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/0135def59bf80ffa9c1214d2b1827f6111552060)
+    - fix: return (+1/-0) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/45663b12d5a917fe7cbd56fa62ea39a5521982a9)
+  - **2026-04-20** (1 条提交)
+    - feat: 我的 => 个人 设置页, 未登录支持访问 (+18/-11) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/946ced5838f249fded290349f1aac346626be597)
 
-- **分支: master-mp-test** (1 条提交)
-  *分支变更: +3 / -1*
-  - fix: ref (+3/-1) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/4199746c69a78a01a303df71e7b2e9e598685c2b)
+- **分支: fix/电子卡** (4 条提交)
+  - **2026-04-24** (4 条提交)
+    - chore: style [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/ce96c08bb157d89ae025487e019ca7bf9f0e78fb)
+    - chore: 换行 [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/a50fae9d98778dc977649ae0ae012bd956928c66)
+    - fix: 电子卡 [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/d447a0da8e300a637f8d4490e9e435c7f2a249c0)
+    - feat: 订单提示 [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/4a741e7f15fc92dbe9356ec90f70c998a72d43dc)
 
-- **分支: feat/盛京支付** (1 条提交)
-  *分支变更: +1 / -0*
-  - feat: 渠道列表新增 orderId 参数 (+1/-0) [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/15fb2ecc6a39c1051c629d99ed90b85914e7277f)
+- **分支: fix/mp-电子卡** (2 条提交)
+  - **2026-04-24** (2 条提交)
+    - fix: style [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/0ddd553a847aef4367d8a34f9be1d60077f1ed71)
+    - fix: 电子卡 10 [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/ef98566ce25a1b292b2d5e2ab743e3eb12c1bbf0)
 
-
-### yeqiao-insurance (1 条提交)
-*项目变更: +11 / -1*
-
-- **分支: feat/埋点接入** (1 条提交)
-  *分支变更: +11 / -1*
-  - feat: 模块映射 (+11/-1) [🔗](http://172.17.188.125:9001/yeqiao/insproduct/yeqiao-insurance/-/commit/3569ba3c6b8e118488d768b62de17d0817504f95)
-
-
-### OuterJoinPro (1 条提交)
-*项目变更: +1 / -2*
-
-- **分支: feat/埋点接入** (1 条提交)
-  *分支变更: +1 / -2*
-  - chore: 1 级模块名 (+1/-2) [🔗](http://172.17.188.125:9001/yeqiaocarplatformteam/outerjoinpro/-/commit/e98389c405597370cf4b7fe21827e707b5a68636)
+- **分支: feat_二维码跳转_20260424_mp** (1 条提交)
+  - **2026-04-24** (1 条提交)
+    - feat: 订单提示 [🔗](http://172.17.188.125:9001/yeqiao/app/yeqiao-mobile/-/commit/33b5bd2ea18cc600f243c0ef3749eb754226f421)
 
 
 ---

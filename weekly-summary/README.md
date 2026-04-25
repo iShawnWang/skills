@@ -48,10 +48,10 @@ npm install
 ### 生成第一份报告
 
 ```bash
-GITLAB_ACCESS_TOKEN=你的Token npx ts-node scripts/cli.ts
+GITLAB_ACCESS_TOKEN=你的Token npx ts-node scripts/cli.ts > weekly-summary.md
 ```
 
-这将生成过去 7 天的报告并输出到终端。
+这将生成过去 7 天的报告并保存到 `weekly-summary.md`。
 
 ## 使用示例
 
@@ -72,7 +72,7 @@ GITLAB_ENDPOINT=http://172.17.188.125:9001/ npx ts-node scripts/cli.ts
 
 ### 保存到文件
 ```bash
-npx ts-node scripts/cli.ts > weekly-report.md
+npx ts-node scripts/cli.ts > weekly-summary.md
 ```
 
 ## 配置说明

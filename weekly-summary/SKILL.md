@@ -34,8 +34,8 @@ npm install
 # GITLAB_ACCESS_TOKEN=你的Token
 # GITLAB_ENDPOINT=http://your-gitlab-url/
 
-# 3. 运行工具
-npx ts-node scripts/cli.ts
+# 3. 运行工具并保存结果
+npx ts-node scripts/cli.ts > weekly-summary.md
 ```
 
 ## 使用示例
@@ -52,7 +52,7 @@ npx ts-node scripts/cli.ts --start-date "2024-04-01" --end-date "2024-04-07"
 
 ### 使用自托管实例并保存到文件
 ```bash
-GITLAB_ENDPOINT=http://172.17.188.125:9001/ npx ts-node scripts/cli.ts > weekly-report.md
+GITLAB_ENDPOINT=http://172.17.188.125:9001/ npx ts-node scripts/cli.ts > weekly-summary.md
 ```
 
 ## 配置说明
