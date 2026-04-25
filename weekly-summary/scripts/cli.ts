@@ -1,18 +1,38 @@
 #!/usr/bin/env node
 
-import * as fs from 'fs';
-import * as path from 'path';
-import * as dotenv from 'dotenv';
 import { Command } from 'commander';
+import { getEnvPath, initSkillConfig, loadSkillEnv } from './config';
 import { WeeklyReportGenerator } from './report-generator';
 
-// Load .env file if it exists
-const envPath = path.join(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
+loadSkillEnv();
+
+function initCommand(args: string[]): void {
+  const program = new Command();
+  program
+    .name('gitlab-weekly-report init')
+    .requiredOption('--gitlab-token <token>', 'GitLab personal access token')
+    .option('--gitlab-url <url>', 'GitLab instance URL (default: https://gitlab.com)')
+    .option('--username <name>', 'GitLab username');
+
+  program.parse(['node', 'gitlab-weekly-report init', ...args]);
+  const options = program.opts();
+
+  initSkillConfig({
+    token: options.gitlabToken,
+    gitlabUrl: options.gitlabUrl || 'https://gitlab.com',
+    username: options.username,
+  });
+
+  console.error(`Configuration saved to ${getEnvPath()}`);
 }
 
 async function main() {
+  const argv = process.argv.slice(2);
+  if (argv[0] === 'init') {
+    initCommand(argv.slice(1));
+    return;
+  }
+
   const program = new Command();
 
   program

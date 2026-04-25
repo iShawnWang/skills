@@ -13,7 +13,13 @@ description: "管理乔乔车小程序的自动化构建服务。支持触发构
 
 1.  **询问配置**: 检查当前 Skill 定义中是否包含有效的 `iMac_IP` 和 `iMac_Port`。
 2.  **提示用户**: 如果未配置，请提示用户：“检测到是首次使用打包 Skill，请提供 iMac 打包机的**内网 IP**（例如 192.168.x.x）和**端口号**（默认为 3000）。”
-3.  **记录配置**: 用户提供后，AI 助手应确认该信息，并将其视为本次会话的全局变量。
+3.  **记录配置**: 用户提供后，AI 助手应执行 `qqc_miniprogram_tool.sh init <iMac_IP> [iMac_Port]`，将配置保存到当前 Skill 安装目录下的 `.env` 文件（权限 600）。
+
+## 配置规则
+
+- **配置文件**: 固定使用当前 Skill 安装目录下的 `.env`
+- **推荐命令**: `./qqc_miniprogram_tool.sh init 192.168.x.x 3000`
+- **查看当前配置**: `./qqc_miniprogram_tool.sh show`
 
 ## 核心功能
 
@@ -22,26 +28,31 @@ description: "管理乔乔车小程序的自动化构建服务。支持触发构
 - **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/build`
 - **描述**: 启动新的构建任务。
 - **关联场景**: 对应 `package.json` 中的 `ci:dev` 命令。
+- **命令**: `./qqc_miniprogram_tool.sh build`
 
 ### 2. 获取状态 (Status)
 - **方法**: `GET`
 - **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/status`
 - **描述**: 返回当前是否正在执行构建。
+- **命令**: `./qqc_miniprogram_tool.sh status`
 
 ### 3. 获取日志 (Log)
 - **方法**: `GET`
 - **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/log`
 - **描述**: 获取最新构建日志。
+- **命令**: `./qqc_miniprogram_tool.sh log`
 
 ### 4. 上次构建信息 (Last Build)
 - **方法**: `GET`
 - **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/last-build`
 - **描述**: 获取最近一次成功构建的 Commit Hash。
+- **命令**: `./qqc_miniprogram_tool.sh last-build`
 
 ### 5. 健康检查 (Health)
 - **方法**: `GET`
 - **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/health`
 - **描述**: 检查服务存活状态。
+- **命令**: `./qqc_miniprogram_tool.sh health`
 
 ## 💡 触发场景 (Trigger Scenarios)
 
@@ -64,4 +75,4 @@ AI 助手在接收到以下类似指令时，应主动调用此 Skill：
 ## 使用场景
 
 - **初次触发**: “发布小程序体验版” -> AI: “好的，请告诉我打包机 iMac 的 IP 和端口。”
-- **后续任务**: AI 将自动记住 IP 进行后续操作，除非用户主动要求更改。
+- **后续任务**: AI 应优先读取同目录 `.env`，除非用户主动要求更改。

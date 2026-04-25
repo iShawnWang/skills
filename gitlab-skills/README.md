@@ -10,8 +10,8 @@
 gitlab-skills/
 ├── package.json           # 项目配置
 ├── tsconfig.json          # TypeScript 配置
-├── .env.gitlab            # 用户配置（自动生成，已 gitignore）
-├── .env.gitlab.example    # 配置模板
+├── .env                   # 用户配置（自动生成，已 gitignore）
+├── .env.gitlab.example    # 旧版配置模板（兼容保留）
 ├── SKILL.md               # AI Skill 定义
 ├── README.md              # 使用文档
 └── src/
@@ -33,7 +33,8 @@ gitlab-skills/
    - 在项目中配置 AI Skill 指向 `SKILL.md`。
 3. **初始化**:
    - 在 AI 对话框中输入：`帮我初始化 GitLab，token 是 [你的Token]，endpoint 是 [你的地址]`。
-   - AI 会自动调用 `npx tsx src/index.ts init` 并将配置持久化到 `.env.gitlab`。
+   - AI 会自动调用 `npx tsx src/index.ts init` 并将配置持久化到当前 skill 目录的 `.env`。
+   - 如果目录里只有旧版 `.env.gitlab`，也会自动兼容读取。
    - 无需手动安装依赖，`npx` 会自动处理。
 
 ## 核心功能

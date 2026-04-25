@@ -11,11 +11,13 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库及�
 - **工作目录**: 所有指令必须在 `gitlab-skills/` 目录下执行，或使用绝对路径 `npx tsx /path/to/gitlab-skills/src/index.ts`。
 - **输出格式**: 所有命令 stdout 输出 JSON，stderr 输出过程日志（不影响结果解析）。
 - **环境要求**: Node.js >= 18，无需预装依赖，`npx` 会自动下载 tsx。
+- **配置路径**: 固定读取当前 Skill 安装目录下的 `.env`，兼容旧版 `.env.gitlab`。
 
 ## 初始化配置 (首次使用必读)
 为了让 Skill 正常运行并持久化你的凭据，**首次使用时**必须执行初始化操作：
 - **操作方式**: 告诉 AI 你的 `accessToken` 和 `gitlabEndpoint`，AI 会自动调用初始化指令。
-- **存储方式**: 配置会被安全存储在 `gitlab-skills/.env.gitlab` 文件中（权限 600）。
+- **存储方式**: 配置会被安全存储在当前 Skill 安装目录的 `.env` 文件中（权限 600）。
+- **兼容说明**: 如果目录里只有旧版 `.env.gitlab`，Skill 仍会继续读取。
 - **重新配置**: 如果需要更换账号或实例地址，再次执行初始化指令即可覆盖。
 
 ## 核心功能

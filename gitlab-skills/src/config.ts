@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync, chmodSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AppConfig } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ENV_FILE = join(__dirname, "..", ".env.gitlab");
+const ENV_FILE = join(__dirname, "..", ".env");
+const LEGACY_ENV_FILE = join(__dirname, "..", ".env.gitlab");
 
 /**
  * 解析 .env 文件内容为键值对
@@ -25,7 +26,7 @@ function parseEnvFile(content: string): Record<string, string> {
 }
 
 /**
- * 初始化配置：将 token 和 endpoint 写入 .env.gitlab
+ * 初始化配置：将 token 和 endpoint 写入 .env
  */
 export function initConfig(token: string, endpoint: string): void {
   if (!token || !endpoint) {
@@ -41,12 +42,13 @@ export function initConfig(token: string, endpoint: string): void {
 }
 
 /**
- * 加载配置：从 .env.gitlab 读取并校验
+ * 加载配置：优先从 .env 读取，兼容旧版 .env.gitlab
  */
 export function loadConfig(): AppConfig {
+  const configFile = existsSync(ENV_FILE) ? ENV_FILE : LEGACY_ENV_FILE;
   let content: string;
   try {
-    content = readFileSync(ENV_FILE, "utf-8");
+    content = readFileSync(configFile, "utf-8");
   } catch {
     console.error("错误: 配置文件不存在，请先执行 'npx tsx src/index.ts init <token> <endpoint>' 进行初始化");
     process.exit(1);

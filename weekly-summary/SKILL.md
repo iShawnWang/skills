@@ -29,10 +29,8 @@ compatibility: Node.js 18+, TypeScript
 # 1. 安装依赖
 npm install
 
-# 2. 配置环境变量 (可选，或通过 CLI 参数传入)
-# 在根目录创建 .env 文件：
-# GITLAB_ACCESS_TOKEN=你的Token
-# GITLAB_ENDPOINT=http://your-gitlab-url/
+# 2. 初始化当前 Skill 目录下的 .env
+npx ts-node scripts/cli.ts init --gitlab-token "你的Token" --gitlab-url "http://your-gitlab-url/" --username "你的用户名"
 
 # 3. 运行工具并保存结果
 npx ts-node scripts/cli.ts > weekly-summary.md
@@ -40,9 +38,14 @@ npx ts-node scripts/cli.ts > weekly-summary.md
 
 ## 使用示例
 
+### 初始化配置
+```bash
+npx ts-node scripts/cli.ts init --gitlab-token "glpat-xxx"
+```
+
 ### 生成上周报告 (默认)
 ```bash
-GITLAB_ACCESS_TOKEN=xxx npx ts-node scripts/cli.ts
+npx ts-node scripts/cli.ts
 ```
 
 ### 指定日期范围
@@ -52,7 +55,7 @@ npx ts-node scripts/cli.ts --start-date "2024-04-01" --end-date "2024-04-07"
 
 ### 使用自托管实例并保存到文件
 ```bash
-GITLAB_ENDPOINT=http://172.17.188.125:9001/ npx ts-node scripts/cli.ts > weekly-summary.md
+npx ts-node scripts/cli.ts --gitlab-url "http://172.17.188.125:9001/" > weekly-summary.md
 ```
 
 ## 配置说明
@@ -65,12 +68,15 @@ GITLAB_ENDPOINT=http://172.17.188.125:9001/ npx ts-node scripts/cli.ts > weekly-
 | `GITLAB_ENDPOINT` | ❌ 否 | GitLab 实例 URL (例如: http://172.17.188.125:9001/) |
 | `GITLAB_USERNAME` | ❌ 否 | 目标用户名 (默认自动检测 Token 所有者) |
 
+Skill 会固定读取自己安装目录下的 `.env`，不依赖当前 shell 工作目录。
+
 ### 命令行参数
 
 - `--start-date <YYYY-MM-DD>`: 统计起始日期
 - `--end-date <YYYY-MM-DD>`: 统计结束日期
 - `--gitlab-url <url>`: GitLab 实例地址
 - `--username <name>`: 指定查询的用户名
+- `init --gitlab-token <token> [--gitlab-url <url>] [--username <name>]`: 初始化并持久化当前 Skill 的 `.env`
 - `--help`: 查看帮助
 
 ## 报告结构示例
@@ -97,7 +103,7 @@ GITLAB_ENDPOINT=http://172.17.188.125:9001/ npx ts-node scripts/cli.ts > weekly-
 ## 注意事项
 
 - **数据过滤**：工具会自动过滤掉非本人的提交以及所有的 Merge 类提交（如 `Merge branch...`）。
-- **隐私安全**：所有处理均在本地进行，Token 不会被上传或记录。
+- **隐私安全**：所有处理均在本地进行，Token 会保存在当前 Skill 安装目录的 `.env` 中。
 - **性能限制**：为了防止触发 API 速率限制，代码变更统计仅分析每个项目最近的 20 条提交。
 
 ---

@@ -79,7 +79,13 @@ npx ts-node scripts/cli.ts > weekly-summary.md
 
 ### 环境变量
 
-你可以创建 `.env` 文件来持久化配置：
+你可以在当前 skill 安装目录执行初始化命令来持久化配置：
+
+```bash
+npx ts-node scripts/cli.ts init --gitlab-token "glpat-xxx" --gitlab-url "http://your-gitlab-url/" --username "your.username"
+```
+
+也可以手动维护同目录下的 `.env`：
 
 ```env
 GITLAB_ACCESS_TOKEN=glpat-xxx
