@@ -1,45 +1,9 @@
 import type { GitLabClient } from "../client.js";
 import type {
-  GitLabProject,
-  GitLabBranch,
   GitLabMergeRequest,
   GitLabMergeRequestChanges,
 } from "../types.js";
-
-/**
- * 通过仓库名模糊查找项目 ID
- * 优先完全匹配 name 或 path，否则返回第一个搜索结果
- */
-async function findProjectIdByName(client: GitLabClient, name: string): Promise<number | null> {
-  const projects = await client.get<GitLabProject[]>("/projects", {
-    search: name,
-    membership: "true",
-    simple: "true",
-  });
-
-  if (projects.length === 0) return null;
-
-  // 优先完全匹配
-  const exact = projects.find((p) => p.name === name || p.path === name);
-  return exact ? exact.id : projects[0].id;
-}
-
-/**
- * 通过模糊分支名查找准确的分支名
- * 优先完全匹配，否则返回第一个搜索结果
- */
-async function findBranchFuzzy(client: GitLabClient, projectId: number, fuzzyBranch: string): Promise<string | null> {
-  const branches = await client.get<GitLabBranch[]>(
-    `/projects/${projectId}/repository/branches`,
-    { search: fuzzyBranch }
-  );
-
-  if (branches.length === 0) return null;
-
-  // 优先完全匹配
-  const exact = branches.find((b) => b.name === fuzzyBranch);
-  return exact ? exact.name : branches[0].name;
-}
+import { findBranchFuzzy, resolveProjectId } from "./utils.js";
 
 /**
  * 合并分支
@@ -64,19 +28,11 @@ export async function mergeBranches(
   }
 
   // 1. 识别项目 ID
-  let projectId: number;
-  if (/^\d+$/.test(project)) {
-    projectId = parseInt(project, 10);
-  } else {
-    console.error(`正在查找仓库 '${project}' 的 ID...`);
-    const foundId = await findProjectIdByName(client, project);
-    if (!foundId) {
-      console.log(JSON.stringify({ success: false, error: `找不到仓库 '${project}'` }));
-      process.exit(1);
-      return;
-    }
-    projectId = foundId;
-    console.error(`找到仓库 ID: ${projectId}`);
+  const projectId = await resolveProjectId(client, project);
+  if (!projectId) {
+    console.log(JSON.stringify({ success: false, error: `找不到仓库 '${project}'` }));
+    process.exit(1);
+    return;
   }
 
   // 2. 识别源分支名

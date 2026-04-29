@@ -74,6 +74,29 @@ export interface GitLabMergeRequestChanges {
   }>;
 }
 
+/** GitLab 提交文件操作 */
+export interface GitLabCommitAction {
+  action: "create" | "delete" | "move" | "update" | "chmod";
+  file_path: string;
+  previous_path?: string;
+  content?: string;
+  encoding?: "text" | "base64";
+  last_commit_id?: string;
+  execute_filemode?: boolean;
+}
+
+/** GitLab Commit 信息 */
+export interface GitLabCommit {
+  id: string;
+  short_id: string;
+  title: string;
+  message: string;
+  web_url: string;
+  author_name: string;
+  authored_date: string;
+  committed_date: string;
+}
+
 /** 应用配置 */
 export interface AppConfig {
   accessToken: string;

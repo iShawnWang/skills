@@ -1,6 +1,6 @@
 # GitLab AI Skill
 
-这是一个为 AI 设计的 GitLab 集成插件，支持查询用户、仓库以及自动化合并分支。
+这是一个为 AI 设计的 GitLab 集成插件，支持查询用户、仓库、创建分支、提交代码以及自动化合并分支。
 
 使用 TypeScript 编写，零运行时依赖，通过 `npx tsx` 直接执行。
 
@@ -22,7 +22,10 @@ gitlab-skills/
     └── commands/
         ├── user.ts        # 用户查询
         ├── repos.ts       # 仓库查询
-        └── merge.ts       # 合并分支
+        ├── branch.ts      # 创建分支
+        ├── commit.ts      # 提交代码
+        ├── merge.ts       # 合并分支
+        └── utils.ts       # 项目/分支解析工具
 ```
 
 ## 如何分发给他人
@@ -41,7 +44,30 @@ gitlab-skills/
 
 - **查询用户信息**: `npx tsx src/index.ts user [username]`
 - **查询仓库**: `npx tsx src/index.ts repos [关键词]`
+- **创建分支**: `npx tsx src/index.ts branch [项目ID或名称] [新分支] [基准分支]`
+- **提交代码并 push**: `npx tsx src/index.ts commit [项目ID或名称] [目标分支] [提交信息] [actions_json或@文件]`
 - **合并分支**: `npx tsx src/index.ts merge [项目ID或名称] [源分支] [目标分支] [标题]`（冲突时会自动返回 MR 地址）
+
+### 提交 actions 格式
+
+`commit` 命令通过 GitLab Commits API 直接在远程分支创建提交，相当于 push 到该分支。第四个参数可以是 JSON 字符串，也可以是 `@actions.json` 文件路径。
+
+```json
+[
+  {
+    "action": "update",
+    "file_path": "README.md",
+    "content": "新的文件内容"
+  },
+  {
+    "action": "create",
+    "file_path": "docs/example.md",
+    "content": "# Example\n"
+  }
+]
+```
+
+支持的 `action` 包括 `create`、`update`、`delete`、`move`、`chmod`。
 
 ## 输出格式
 

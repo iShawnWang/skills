@@ -32,7 +32,7 @@ export class GitLabClient {
   /**
    * 发送 POST 请求
    */
-  async post<T>(path: string, body: Record<string, string | boolean>): Promise<T> {
+  async post<T>(path: string, body: unknown): Promise<T> {
     const response = await fetch(`${this.apiUrl}${path}`, {
       method: "POST",
       headers: this.headers,
@@ -44,7 +44,7 @@ export class GitLabClient {
   /**
    * 发送 PUT 请求
    */
-  async put<T>(path: string, body?: Record<string, string | boolean>): Promise<T> {
+  async put<T>(path: string, body?: unknown): Promise<T> {
     const response = await fetch(`${this.apiUrl}${path}`, {
       method: "PUT",
       headers: this.headers,

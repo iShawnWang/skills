@@ -1,6 +1,6 @@
 ---
 name: "gitlab-skill"
-description: "GitLab 集成插件，支持查询用户信息、搜索仓库及合并分支。在需要执行 GitLab 相关操作时调用。"
+description: "GitLab 集成插件，支持查询用户信息、搜索仓库、创建分支、提交代码及合并分支。在需要执行 GitLab 相关操作时调用。"
 ---
 
 # GitLab Skill
@@ -37,7 +37,35 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库及�
 - **调用场景**: 需要寻找特定项目 ID 或查看项目列表时。
 - **指令**: `npx tsx src/index.ts repos [search]`
 
-### 3. 合并分支 (Merge Branches)
+### 3. 创建分支 (Create Branch)
+基于某个已有分支创建新分支。
+- **参数支持**:
+    - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
+    - **基准分支**: 支持传入 `完整分支名` 或 `模糊分支名` (自动寻找最匹配的分支)。
+- **调用场景**: 开始新需求、修复问题、发布准备，或用户要求“基于某个分支创建新分支”时。
+- **指令**: `npx tsx src/index.ts branch "my-repo" "feature/new-task" "main"`
+
+### 4. 提交代码并 push (Commit)
+在指定远程分支创建一次提交。该命令使用 GitLab Commits API 直接提交到远程分支，相当于完成 push。
+- **参数支持**:
+    - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
+    - **目标分支**: 支持传入 `完整分支名` 或 `模糊分支名` (自动寻找最匹配的分支)。
+    - **actions**: 支持 JSON 字符串，或 `@actions.json` 文件路径。actions 必须是数组。
+- **actions 格式**:
+```json
+[
+  {
+    "action": "update",
+    "file_path": "README.md",
+    "content": "新的文件内容"
+  }
+]
+```
+- **支持的 action**: `create`、`update`、`delete`、`move`、`chmod`。
+- **调用场景**: 用户要求“在某个分支提交代码并 push”、需要远程创建/更新/删除文件时。
+- **指令**: `npx tsx src/index.ts commit "my-repo" "feature/new-task" "docs: update readme" @actions.json`
+
+### 5. 合并分支 (Merge Branches)
 将一个分支的代码合并到另一个分支（通过创建并自动合并 Merge Request 实现）。
 - **参数支持**:
     - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
@@ -52,4 +80,6 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库及�
 ## 使用示例
 > "帮我查询一下用户 'john_doe' 的信息"
 > "搜索名为 'frontend-app' 的仓库"
+> "基于 'main' 创建新分支 'feature-abc'，项目 ID 是 123"
+> "在 'feature-abc' 分支提交 README 变更并 push，项目 ID 是 123"
 > "将 'feature-abc' 分支合并到 'main' 分支，项目 ID 是 123"
