@@ -1,0 +1,3 @@
+display_name: 禅道
+short_description: 登录内网禅道，查询、评论和关闭指派给我的 Bug。
+default_prompt: 查询指派给我的禅道 Bug
