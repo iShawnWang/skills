@@ -1,5 +1,10 @@
 import type { GitLabClient } from "../client.js";
-import type { GitLabProject, GitLabBranch, GitLabMergeRequest } from "../types.js";
+import type {
+  GitLabProject,
+  GitLabBranch,
+  GitLabMergeRequest,
+  GitLabMergeRequestChanges,
+} from "../types.js";
 
 /**
  * 通过仓库名模糊查找项目 ID
@@ -55,6 +60,7 @@ export async function mergeBranches(
   if (!project || !source || !target) {
     console.error("用法: merge <project_id_or_name> <source_branch> <target_branch> [title]");
     process.exit(1);
+    return;
   }
 
   // 1. 识别项目 ID
@@ -67,6 +73,7 @@ export async function mergeBranches(
     if (!foundId) {
       console.log(JSON.stringify({ success: false, error: `找不到仓库 '${project}'` }));
       process.exit(1);
+      return;
     }
     projectId = foundId;
     console.error(`找到仓库 ID: ${projectId}`);
@@ -78,6 +85,7 @@ export async function mergeBranches(
   if (!sourceBranch) {
     console.log(JSON.stringify({ success: false, error: `在项目 ${projectId} 中找不到源分支 '${source}'` }));
     process.exit(1);
+    return;
   }
   console.error(`确定源分支: ${sourceBranch}`);
 
@@ -87,6 +95,7 @@ export async function mergeBranches(
   if (!targetBranch) {
     console.log(JSON.stringify({ success: false, error: `在项目 ${projectId} 中找不到目标分支 '${target}'` }));
     process.exit(1);
+    return;
   }
   console.error(`确定目标分支: ${targetBranch}`);
 
@@ -94,24 +103,63 @@ export async function mergeBranches(
   const mrTitle = title || `Merge ${sourceBranch} into ${targetBranch} via GitLab Skill`;
   console.error(`正在创建 Merge Request: ${sourceBranch} -> ${targetBranch}...`);
 
-  const mr = await client.post<GitLabMergeRequest>(
-    `/projects/${projectId}/merge_requests`,
-    {
-      source_branch: sourceBranch,
-      target_branch: targetBranch,
-      title: mrTitle,
-      remove_source_branch: "false",
+  let mr: GitLabMergeRequest;
+  try {
+    mr = await client.post<GitLabMergeRequest>(
+      `/projects/${projectId}/merge_requests`,
+      {
+        source_branch: sourceBranch,
+        target_branch: targetBranch,
+        title: mrTitle,
+        remove_source_branch: "false",
+      }
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/no commits|source branch is the same|empty/i.test(message)) {
+      console.log(JSON.stringify({
+        success: true,
+        message: "已经是最新，无需合并",
+        source_branch: sourceBranch,
+        target_branch: targetBranch,
+      }));
+      return;
     }
-  );
+    throw err;
+  }
 
   if (!mr.iid) {
     console.log(JSON.stringify({ success: false, error: "创建 Merge Request 失败", detail: mr }));
     process.exit(1);
+    return;
   }
 
-  console.error(`Merge Request 已创建 (IID: ${mr.iid})。正在轮询合并状态...`);
+  // 5. 检查 MR 是否包含实际文件变更。空 MR 直接关闭，避免合并无变更 MR。
+  console.error(`Merge Request 已创建 (IID: ${mr.iid})。正在检查变更内容...`);
+  const mrChanges = await client.get<GitLabMergeRequestChanges>(
+    `/projects/${projectId}/merge_requests/${mr.iid}/changes`
+  );
 
-  // 5. 轮询合并状态，直到可以合并或出现冲突
+  if (mrChanges.changes.length === 0) {
+    console.error("Merge Request 没有文件变更，正在关闭...");
+    await client.put<GitLabMergeRequest>(
+      `/projects/${projectId}/merge_requests/${mr.iid}`,
+      { state_event: "close" }
+    );
+
+    console.log(JSON.stringify({
+      success: true,
+      message: "已经是最新，无需合并，空 MR 已关闭",
+      mr_url: mr.web_url,
+      source_branch: sourceBranch,
+      target_branch: targetBranch,
+    }));
+    return;
+  }
+
+  console.error(`检测到 ${mrChanges.changes.length} 个文件变更。正在轮询合并状态...`);
+
+  // 6. 轮询合并状态，直到可以合并或出现冲突
   let currentMr = mr;
   let attempts = 0;
   const maxAttempts = 15; // 最多等待 30s
@@ -132,6 +180,7 @@ export async function mergeBranches(
         mr_url: mr.web_url,
       }));
       process.exit(1);
+      return;
     }
 
     console.error(`当前状态: ${currentMr.merge_status}，等待 2s 后重试 (${attempts + 1}/${maxAttempts})...`);
@@ -146,7 +195,7 @@ export async function mergeBranches(
 
   console.error("正在发送合并请求...");
 
-  // 6. 接受（合并）Merge Request
+  // 7. 接受（合并）Merge Request
   try {
     const mergeResult = await client.put<GitLabMergeRequest>(
       `/projects/${projectId}/merge_requests/${mr.iid}/merge`,

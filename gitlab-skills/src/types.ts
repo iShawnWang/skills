@@ -62,6 +62,18 @@ export interface GitLabMergeRequest {
   created_at: string;
 }
 
+/** GitLab Merge Request 变更信息 */
+export interface GitLabMergeRequestChanges {
+  changes: Array<{
+    old_path: string;
+    new_path: string;
+    diff: string;
+    new_file: boolean;
+    renamed_file: boolean;
+    deleted_file: boolean;
+  }>;
+}
+
 /** 应用配置 */
 export interface AppConfig {
   accessToken: string;
