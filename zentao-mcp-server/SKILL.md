@@ -1,5 +1,5 @@
 ---
-name: "zentao-skill"
+name: "zentao-mcp-server"
 description: "内网禅道 HTTP 服务。用于登录 ZenTao/禅道实例，暴露 HTTP 接口查询、评论、指派、解决 Bug，并支持对“新指派给我”的 Bug 做飞书通知。"
 ---
 
@@ -9,7 +9,7 @@ description: "内网禅道 HTTP 服务。用于登录 ZenTao/禅道实例，暴�
 
 ## 执行须知
 
-- **启动方式**: 在 `zentao-skill/` 下执行 `npm run serve` 或 `pnpm serve`。
+- **启动方式**: 在 `zentao-mcp-server/` 下执行 `npm run serve` 或 `pnpm serve`。
 - **接口风格**: 本地 HTTP `POST` 接口，返回统一 JSON。
 - **环境要求**: Node.js >= 18。运行时只依赖 Node 内置 `fetch`，开发运行可用 `npx tsx`。
 - **配置路径**: 固定读取当前 Skill 安装目录下的 `.env`，账号密码只写入这个文件。

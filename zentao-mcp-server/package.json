@@ -1,5 +1,5 @@
 {
-  "name": "zentao-skill",
+  "name": "zentao-mcp-server",
   "version": "0.1.0",
   "description": "内网禅道 HTTP 服务，支持查询、评论、指派、解决 Bug 和飞书通知",
   "type": "module",

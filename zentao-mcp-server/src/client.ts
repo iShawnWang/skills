@@ -46,7 +46,7 @@ export class ZentaoClient {
     const headers = new Headers(options.headers);
     const cookie = this.cookieHeader();
     if (cookie) headers.set("cookie", cookie);
-    if (!headers.has("user-agent")) headers.set("user-agent", "codex-zentao-skill/0.1");
+    if (!headers.has("user-agent")) headers.set("user-agent", "zentao-mcp-server/0.1");
 
     const response = await fetch(options.rawPath ? path : this.resolve(path), {
       ...options,
