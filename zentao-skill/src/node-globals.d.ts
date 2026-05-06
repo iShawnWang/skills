@@ -1,5 +1,6 @@
 declare const process: {
   argv: string[];
+  on(event: "SIGINT" | "SIGTERM", listener: () => void): void;
   exit(code?: number): never;
 };
 

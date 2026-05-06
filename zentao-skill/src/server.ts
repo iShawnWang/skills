@@ -21,7 +21,6 @@ interface RequestBody {
   resolution?: string;
   args?: string[];
   target?: string;
-  watchKey?: string;
   assignee?: string;
   intervalMs?: number;
   mailto?: string[];
@@ -42,6 +41,26 @@ interface WatchRuntime {
   timer: ReturnType<typeof setInterval>;
   intervalMs: number;
   assignee: string;
+}
+
+function formatLocalDateTime(date = new Date()): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+function normalizeStoredDateTime(value: string): string {
+  if (!value) return value;
+  if (/^\d{4}[-/]\d{2}[-/]\d{2} /.test(value)) return value;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : formatLocalDateTime(date);
 }
 
 function json(res: ServerResponse, statusCode: number, payload: Record<string, unknown>): void {
@@ -69,7 +88,11 @@ async function readJsonBody(req: IncomingMessage): Promise<RequestBody> {
 function loadWatchState(config: ServerConfig): WatchStateStore {
   if (!existsSync(config.stateFile)) return {};
   try {
-    return JSON.parse(readFileSync(config.stateFile, "utf-8")) as WatchStateStore;
+    const parsed = JSON.parse(readFileSync(config.stateFile, "utf-8")) as WatchStateStore;
+    for (const item of Object.values(parsed)) {
+      item.lastCheckedAt = normalizeStoredDateTime(item.lastCheckedAt);
+    }
+    return parsed;
   } catch {
     return {};
   }
@@ -114,89 +137,100 @@ class WatchManager {
 
   status(): Record<string, unknown> {
     return {
-      watchers: [...this.runtime.entries()].map(([watchKey, item]) => ({
-        watchKey,
-        assignee: item.assignee,
+      watchers: [...this.runtime.entries()].map(([assignee, item]) => ({
+        assignee,
         intervalMs: item.intervalMs,
-        snapshotBugIds: this.state[watchKey]?.snapshotBugIds ?? [],
-        lastCheckedAt: this.state[watchKey]?.lastCheckedAt ?? null,
+        snapshotBugIds: this.state[assignee]?.snapshotBugIds ?? [],
+        lastCheckedAt: this.state[assignee]?.lastCheckedAt ?? null,
         running: true,
       })),
     };
   }
 
-  async start(watchKey: string, assignee: string, intervalMs: number): Promise<Record<string, unknown>> {
+  private async runCheck(assignee: string): Promise<Record<string, unknown>> {
+    const client = new ZentaoClient(loadConfig());
+    const result = await listMyBugs(client);
+    const currentIds = result.bugs.map((bug) => bug.id);
+    const previousIds = new Set(this.state[assignee]?.snapshotBugIds ?? []);
+    const newBugs = result.bugs.filter((bug) => !previousIds.has(bug.id));
+    await notifyFeishu(this.config.feishuWebhookUrl, this.config.feishuKeywordPrefix, newBugs, assignee);
+    this.state[assignee] = {
+      assignee,
+      snapshotBugIds: currentIds,
+      lastCheckedAt: formatLocalDateTime(),
+    };
+    saveWatchState(this.config, this.state);
+    return {
+      assignee,
+      checked: true,
+      newBugCount: newBugs.length,
+      newBugIds: newBugs.map((bug) => bug.id),
+      lastCheckedAt: this.state[assignee].lastCheckedAt,
+    };
+  }
+
+  async start(assignee: string, intervalMs: number): Promise<Record<string, unknown>> {
     if (!this.config.feishuWebhookUrl) throw new Error("FEISHU_WEBHOOK_URL is required before starting watcher");
-    await this.stop(watchKey);
-    if (!this.state[watchKey]) {
+    await this.stop(assignee);
+    if (!this.state[assignee]) {
       const client = new ZentaoClient(loadConfig());
       const initial = await listMyBugs(client);
-      this.state[watchKey] = {
+      this.state[assignee] = {
         assignee,
         snapshotBugIds: initial.bugs.map((bug) => bug.id),
-        lastCheckedAt: new Date().toISOString(),
+        lastCheckedAt: formatLocalDateTime(),
       };
       saveWatchState(this.config, this.state);
     }
 
-    const tick = async (): Promise<void> => {
-      const client = new ZentaoClient(loadConfig());
-      const result = await listMyBugs(client);
-      const currentIds = result.bugs.map((bug) => bug.id);
-      const previousIds = new Set(this.state[watchKey]?.snapshotBugIds ?? []);
-      const newBugs = result.bugs.filter((bug) => !previousIds.has(bug.id));
-      await notifyFeishu(this.config.feishuWebhookUrl, this.config.feishuKeywordPrefix, newBugs, assignee);
-      this.state[watchKey] = {
-        assignee,
-        snapshotBugIds: currentIds,
-        lastCheckedAt: new Date().toISOString(),
-      };
-      saveWatchState(this.config, this.state);
-    };
-
     const timer = setInterval(() => {
-      void tick().catch((error) => {
-        const previous = this.state[watchKey];
-        this.state[watchKey] = {
+      void this.runCheck(assignee).catch((error) => {
+        const previous = this.state[assignee];
+        this.state[assignee] = {
           assignee,
           snapshotBugIds: previous?.snapshotBugIds ?? [],
-          lastCheckedAt: new Date().toISOString(),
+          lastCheckedAt: formatLocalDateTime(),
         };
         saveWatchState(this.config, this.state);
-        console.error(`[watch:${watchKey}]`, error);
+        console.error(`[watch:${assignee}]`, error);
       });
     }, intervalMs);
 
-    this.runtime.set(watchKey, { timer, intervalMs, assignee });
+    this.runtime.set(assignee, { timer, intervalMs, assignee });
     return {
-      watchKey,
       assignee,
       intervalMs,
-      snapshotBugIds: this.state[watchKey].snapshotBugIds,
-      lastCheckedAt: this.state[watchKey].lastCheckedAt,
+      snapshotBugIds: this.state[assignee].snapshotBugIds,
+      lastCheckedAt: this.state[assignee].lastCheckedAt,
       message: "watcher 已启动；首次启动仅建立快照，不通知历史 bug",
     };
   }
 
-  async stop(watchKey: string): Promise<Record<string, unknown>> {
-    const runtime = this.runtime.get(watchKey);
-    if (runtime) {
-      clearInterval(runtime.timer);
-      this.runtime.delete(watchKey);
-    }
-    return { watchKey, stopped: true };
+  async run(assignee: string): Promise<Record<string, unknown>> {
+    const snapshot = this.state[assignee];
+    if (!snapshot) throw new Error("assignee not found");
+    return this.runCheck(assignee);
   }
 
-  async reset(watchKey?: string, resetAll = false): Promise<Record<string, unknown>> {
+  async stop(assignee: string): Promise<Record<string, unknown>> {
+    const runtime = this.runtime.get(assignee);
+    if (runtime) {
+      clearInterval(runtime.timer);
+      this.runtime.delete(assignee);
+    }
+    return { assignee, stopped: true };
+  }
+
+  async reset(assignee?: string, resetAll = false): Promise<Record<string, unknown>> {
     if (resetAll) {
       this.state = {};
       saveWatchState(this.config, this.state);
       return { resetAll: true };
     }
-    if (!watchKey) throw new Error("watchKey is required");
-    delete this.state[watchKey];
+    if (!assignee) throw new Error("assignee is required");
+    delete this.state[assignee];
     saveWatchState(this.config, this.state);
-    return { watchKey, reset: true };
+    return { assignee, reset: true };
   }
 }
 
@@ -253,16 +287,17 @@ async function callTool(pathname: string, body: RequestBody, watchManager: Watch
     case "/watch/start": {
       const config = loadConfig();
       const assignee = body.assignee ? String(body.assignee) : config.username;
-      const watchKey = body.watchKey ? String(body.watchKey) : `my-bugs:${assignee}`;
       const intervalMs = Number(body.intervalMs || getServerConfig().defaultWatchIntervalMs);
-      return watchManager.start(watchKey, assignee, intervalMs);
+      return watchManager.start(assignee, intervalMs);
     }
     case "/watch/stop":
-      return watchManager.stop(String(body.watchKey ?? ""));
+      return watchManager.stop(String(body.assignee ?? ""));
     case "/watch/status":
       return watchManager.status();
+    case "/watch/run":
+      return watchManager.run(String(body.assignee ?? ""));
     case "/watch/reset":
-      return watchManager.reset(body.watchKey ? String(body.watchKey) : undefined, Boolean(body.resetAll));
+      return watchManager.reset(body.assignee ? String(body.assignee) : undefined, Boolean(body.resetAll));
     default:
       throw new Error(`unknown route: ${pathname}`);
   }
@@ -275,7 +310,7 @@ export function startServer(options?: { silent?: boolean }): { listen(port: numb
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`);
-      if (req.method === "GET" && (url.pathname === "/health" || url.pathname === '/')) {
+      if (url.pathname === "/health" || url.pathname === "/") {
         ok(res, { ok: true });
         return;
       }

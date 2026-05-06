@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "serve": "npx tsx src/index.ts",
+    "debug": "npx tsx --inspect-brk src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

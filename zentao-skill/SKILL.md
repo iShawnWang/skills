@@ -103,6 +103,7 @@ POST /diagnose
 - `POST /watch/start`
 - `POST /watch/stop`
 - `POST /watch/status`
+- `POST /watch/check_now`
 - `POST /watch/reset`
 
 比较策略使用“当前快照集”模式：
@@ -113,6 +114,8 @@ POST /diagnose
 
 首次启动 watcher 只建立快照，不通知历史 bug。
 启动 watcher 前需要在 `.env` 中配置 `FEISHU_WEBHOOK_URL`。
+watcher 的唯一标识直接使用 `assignee`，不再单独传 `watchKey`。
+如果需要立刻拉取一次并做 diff，而不是等待下一个轮询周期，调用 `POST /watch/check_now`，Body 传 `assignee`。
 
 ## 使用原则
 

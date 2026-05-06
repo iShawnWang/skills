@@ -1,0 +1,32 @@
+{
+  "my-bugs:wangshuai": {
+    "assignee": "wangshuai",
+    "snapshotBugIds": [
+      10755,
+      10561,
+      10517,
+      10100,
+      9772,
+      9479,
+      9380,
+      9302
+    ],
+    "lastCheckedAt": "2026/05/06 15:46:10"
+  },
+  "wangshuai": {
+    "assignee": "wangshuai",
+    "snapshotBugIds": [
+      10779,
+      10778,
+      10755,
+      10561,
+      10517,
+      10100,
+      9772,
+      9479,
+      9380,
+      9302
+    ],
+    "lastCheckedAt": "2026/05/06 15:59:23"
+  }
+}
