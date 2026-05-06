@@ -35,10 +35,9 @@ function toMultipart(fields: Record<string, string>): FormData {
   return body;
 }
 
-export async function commentBug(client: ZentaoClient, bugId: string | undefined, comment: string | undefined): Promise<void> {
+export async function commentBug(client: ZentaoClient, bugId: string | undefined, comment: string | undefined): Promise<Record<string, unknown>> {
   if (!bugId || !comment) {
-    console.error("用法: comment <bugId> <comment>");
-    process.exit(1);
+    throw new Error("bugId and comment are required");
   }
 
   await client.login();
@@ -49,29 +48,27 @@ export async function commentBug(client: ZentaoClient, bugId: string | undefined
   });
   const directText = await directResponse.text();
   if (directResponse.ok && !isDenied(directText)) {
-    console.log(JSON.stringify({
+    return {
       success: true,
       mode: "action-comment",
       status: directResponse.status,
       bugId: Number(bugId),
       message: "评论已提交",
       preview: directText.slice(0, 300),
-    }, null, 2));
-    return;
+    };
   }
 
   const editPath = `bug-edit-${bugId}.html`;
   const editHtml = await client.text(editPath);
   const form = extractForms(editHtml)[0];
   if (!form || !("comment" in form.fields)) {
-    console.log(JSON.stringify({
+    return {
       success: false,
       mode: "bug-edit",
       bugId: Number(bugId),
       message: "通用评论被拒绝，且编辑表单中未找到 comment 字段",
       preview: directText.slice(0, 300),
-    }, null, 2));
-    return;
+    };
   }
 
   const fields: Record<string, string> = { ...form.fields, comment };
@@ -84,12 +81,12 @@ export async function commentBug(client: ZentaoClient, bugId: string | undefined
     body: toMultipart(fields),
   });
   const text = await response.text();
-  console.log(JSON.stringify({
+  return {
     success: response.ok && !isDenied(text),
     mode: "bug-edit-comment",
     status: response.status,
     bugId: Number(bugId),
     message: response.ok && !isDenied(text) ? "备注已通过 Bug 编辑表单提交" : "备注提交失败，请运行 diagnose bug 查看实际表单",
     preview: text.slice(0, 300),
-  }, null, 2));
+  };
 }

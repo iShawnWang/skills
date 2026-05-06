@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AppConfig } from "./types.js";
@@ -6,6 +6,8 @@ import type { AppConfig } from "./types.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ENV_FILE = join(__dirname, "..", ".env");
 const DEFAULT_BASE_URL = "http://10.10.254.52/zentao";
+const DEFAULT_HTTP_PORT = 3710;
+const DEFAULT_WATCH_INTERVAL_MS = 1800000;
 
 function parseEnvFile(content: string): Record<string, string> {
   const result: Record<string, string> = {};
@@ -37,8 +39,7 @@ export function normalizeBaseUrl(input = DEFAULT_BASE_URL): string {
 
 export function initConfig(username: string, password: string, baseUrl = DEFAULT_BASE_URL): void {
   if (!username || !password) {
-    console.error("用法: init <username> <password> [baseUrl]");
-    process.exit(1);
+    throw new Error("username and password are required");
   }
 
   const content = [
@@ -50,7 +51,11 @@ export function initConfig(username: string, password: string, baseUrl = DEFAULT
 
   writeFileSync(ENV_FILE, content, "utf-8");
   chmodSync(ENV_FILE, 0o600);
-  console.log(JSON.stringify({ success: true, message: `配置已保存至: ${ENV_FILE}` }));
+}
+
+export function initConfigAndReport(username: string, password: string, baseUrl = DEFAULT_BASE_URL): { success: boolean; message: string } {
+  initConfig(username, password, baseUrl);
+  return { success: true, message: `配置已保存至: ${ENV_FILE}` };
 }
 
 export function getConfigStatus(): { configured: boolean; envFile: string; missing: string[]; baseUrl?: string; username?: string } {
@@ -71,8 +76,7 @@ export function getConfigStatus(): { configured: boolean; envFile: string; missi
 
 export function loadConfig(): AppConfig {
   if (!existsSync(ENV_FILE)) {
-    console.error("错误: 配置文件不存在，请先执行 'npx tsx src/index.ts init <username> <password> [baseUrl]'");
-    process.exit(1);
+    throw new Error("配置文件不存在，请先初始化账号密码");
   }
 
   const env = parseEnvFile(readFileSync(ENV_FILE, "utf-8"));
@@ -81,9 +85,31 @@ export function loadConfig(): AppConfig {
   const password = env.ZENTAO_PASSWORD;
 
   if (!username || !password) {
-    console.error("错误: .env 缺少 ZENTAO_USERNAME 或 ZENTAO_PASSWORD，请重新初始化");
-    process.exit(1);
+    throw new Error(".env 缺少 ZENTAO_USERNAME 或 ZENTAO_PASSWORD，请重新初始化");
   }
 
   return { baseUrl: normalizeBaseUrl(baseUrl), username, password };
+}
+
+export interface ServerConfig {
+  port: number;
+  feishuWebhookUrl?: string;
+  feishuKeywordPrefix?: string;
+  defaultWatchIntervalMs: number;
+  stateDir: string;
+  stateFile: string;
+}
+
+export function getServerConfig(): ServerConfig {
+  const env = existsSync(ENV_FILE) ? parseEnvFile(readFileSync(ENV_FILE, "utf-8")) : {};
+  const stateDir = join(__dirname, "..", "data");
+  mkdirSync(stateDir, { recursive: true });
+  return {
+    port: Number(env.HTTP_PORT || DEFAULT_HTTP_PORT),
+    feishuWebhookUrl: env.FEISHU_WEBHOOK_URL || undefined,
+    feishuKeywordPrefix: env.FEISHU_KEYWORD_PREFIX || undefined,
+    defaultWatchIntervalMs: Number(env.BUG_WATCH_INTERVAL_MS || DEFAULT_WATCH_INTERVAL_MS),
+    stateDir,
+    stateFile: join(stateDir, "watch-state.json"),
+  };
 }

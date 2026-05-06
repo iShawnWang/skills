@@ -6,10 +6,9 @@ export async function closeBug(
   bugId: string | undefined,
   resolution = "fixed",
   comment = "",
-): Promise<void> {
+){
   if (!bugId) {
-    console.error("用法: close <bugId> [resolution] [comment]");
-    process.exit(1);
+    throw new Error("bugId is required");
   }
 
   await client.login();
@@ -26,12 +25,12 @@ export async function closeBug(
     body: new URLSearchParams(fields),
   });
   const text = await response.text();
-  console.log(JSON.stringify({
+  return {
     success: response.ok,
     status: response.status,
     bugId: Number(bugId),
     resolution,
     message: response.ok ? "关闭请求已提交" : "关闭失败，请运行 diagnose bug 查看实际表单",
     preview: text.slice(0, 300),
-  }, null, 2));
+  };
 }

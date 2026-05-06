@@ -20,13 +20,12 @@ function actionLinks(html: string): Array<{ href: string; text: string }> {
     }));
 }
 
-export async function diagnose(client: ZentaoClient, target = "my", bugId?: string): Promise<void> {
+export async function diagnose(client: ZentaoClient, target = "my", bugId?: string): Promise<Record<string, unknown>> {
   let path = "my/";
   if (target === "login") path = "user-login.html";
   if (target === "bug") {
     if (!bugId) {
-      console.error("用法: diagnose bug <bugId>");
-      process.exit(1);
+      throw new Error("bugId is required when target=bug");
     }
     await client.login();
     path = `bug-view-${bugId}.html`;
@@ -36,7 +35,7 @@ export async function diagnose(client: ZentaoClient, target = "my", bugId?: stri
 
   const response = await client.request(path);
   const responseHtml = await response.text();
-  console.log(JSON.stringify({
+  return {
     success: true,
     path,
     url: client.resolve(path),
@@ -45,5 +44,5 @@ export async function diagnose(client: ZentaoClient, target = "my", bugId?: stri
     forms: summarizeForms(responseHtml),
     bugLinks: bugLinks(responseHtml),
     actionLinks: actionLinks(responseHtml),
-  }, null, 2));
+  };
 }

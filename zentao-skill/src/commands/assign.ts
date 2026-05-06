@@ -28,10 +28,9 @@ function parseOptions(args: string[]): { mailto: string[]; dryRun: boolean; rest
   };
 }
 
-export async function assignBug(client: ZentaoClient, bugId: string | undefined, assignedTo: string | undefined, args: string[]): Promise<void> {
+export async function assignBug(client: ZentaoClient, bugId: string | undefined, assignedTo: string | undefined, args: string[]) {
   if (!bugId || !assignedTo) {
-    console.error("用法: assign <bugId> <assignedTo> [comment] [--mailto=user1,user2] [--dry-run]");
-    process.exit(1);
+    throw new Error("bugId and assignedTo are required");
   }
 
   const { mailto, dryRun, rest } = parseOptions(args);
@@ -42,13 +41,12 @@ export async function assignBug(client: ZentaoClient, bugId: string | undefined,
   const html = await client.text(assignPath);
   const form = extractForms(html)[0];
   if (!form || !("assignedTo" in form.fields)) {
-    console.log(JSON.stringify({
+    return {
       success: false,
       bugId: Number(bugId),
       assignedTo,
       message: "未找到指派表单，请运行 diagnose bug 查看实际操作链接",
-    }, null, 2));
-    return;
+    };
   }
 
   const fields: Record<string, string> = {
@@ -68,7 +66,7 @@ export async function assignBug(client: ZentaoClient, bugId: string | undefined,
   }
 
   if (dryRun) {
-    console.log(JSON.stringify({
+    return {
       success: true,
       dryRun: true,
       bugId: Number(bugId),
@@ -76,8 +74,7 @@ export async function assignBug(client: ZentaoClient, bugId: string | undefined,
       mailto,
       fields: Object.fromEntries(body.entries()),
       message: "已解析指派表单，未提交",
-    }, null, 2));
-    return;
+    };
   }
 
   const response = await client.request(form.action || assignPath, {
@@ -88,7 +85,7 @@ export async function assignBug(client: ZentaoClient, bugId: string | undefined,
   const text = await response.text();
   const success = response.ok && !isDenied(text);
 
-  console.log(JSON.stringify({
+  return {
     success,
     status: response.status,
     bugId: Number(bugId),
@@ -96,5 +93,5 @@ export async function assignBug(client: ZentaoClient, bugId: string | undefined,
     mailto,
     message: success ? "Bug 指派已提交" : "Bug 指派失败",
     preview: text.slice(0, 300),
-  }, null, 2));
+  };
 }

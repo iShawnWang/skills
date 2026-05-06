@@ -42,10 +42,9 @@ function parseOptions(args: string[]): {
   };
 }
 
-export async function resolveBug(client: ZentaoClient, bugId: string | undefined, resolutionArg: string | undefined, args: string[]): Promise<void> {
+export async function resolveBug(client: ZentaoClient, bugId: string | undefined, resolutionArg: string | undefined, args: string[]) {
   if (!bugId) {
-    console.error("用法: resolve <bugId> [resolution] [comment] [--build=trunk] [--assigned-to=account] [--dry-run]");
-    process.exit(1);
+    throw new Error("bugId is required");
   }
 
   const { build, assignedTo, dryRun, rest } = parseOptions(args);
@@ -59,13 +58,12 @@ export async function resolveBug(client: ZentaoClient, bugId: string | undefined
   const html = await client.text(resolvePath);
   const form = extractForms(html)[0];
   if (!form || !("resolution" in form.fields)) {
-    console.log(JSON.stringify({
+    return {
       success: false,
       bugId: Number(bugId),
       resolution,
       message: "未找到解决 Bug 表单，请运行 diagnose bug 查看实际操作链接",
-    }, null, 2));
-    return;
+    };
   }
 
   const fields: Record<string, string> = {
@@ -82,14 +80,13 @@ export async function resolveBug(client: ZentaoClient, bugId: string | undefined
   if (kuid) fields.uid = kuid;
 
   if (dryRun) {
-    console.log(JSON.stringify({
+    return {
       success: true,
       dryRun: true,
       bugId: Number(bugId),
       fields,
       message: "已解析解决表单，未提交",
-    }, null, 2));
-    return;
+    };
   }
 
   const response = await client.request(form.action || resolvePath, {
@@ -100,7 +97,7 @@ export async function resolveBug(client: ZentaoClient, bugId: string | undefined
   const text = await response.text();
   const success = response.ok && !isDenied(text);
 
-  console.log(JSON.stringify({
+  return {
     success,
     status: response.status,
     bugId: Number(bugId),
@@ -109,5 +106,5 @@ export async function resolveBug(client: ZentaoClient, bugId: string | undefined
     assignedTo: fields.assignedTo,
     message: success ? "Bug 解决已提交" : "Bug 解决失败",
     preview: text.slice(0, 300),
-  }, null, 2));
+  };
 }

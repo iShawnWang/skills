@@ -7,6 +7,18 @@ interface AttachmentSummary {
   media: boolean;
 }
 
+export interface BugDetailResult {
+  success: boolean;
+  id: number;
+  url: string;
+  title: string;
+  steps: string;
+  fields: Record<string, string>;
+  histories: Array<{ index: number; summary: string; comment?: string }>;
+  attachments: AttachmentSummary[];
+  mediaAttachmentsIgnored: number;
+}
+
 function firstMatch(html: string, pattern: RegExp): string {
   const match = html.match(pattern);
   return match ? stripTags(match[1]) : "";
@@ -71,10 +83,9 @@ function parseAttachments(client: ZentaoClient, html: string): AttachmentSummary
   return attachments;
 }
 
-export async function getBugDetail(client: ZentaoClient, bugId: string | undefined, includeMedia = false): Promise<void> {
+export async function getBugDetail(client: ZentaoClient, bugId: string | undefined, includeMedia = false): Promise<BugDetailResult> {
   if (!bugId) {
-    console.error("用法: detail <bugId> [--include-media]");
-    process.exit(1);
+    throw new Error("bugId is required");
   }
 
   await client.login();
@@ -85,7 +96,7 @@ export async function getBugDetail(client: ZentaoClient, bugId: string | undefin
   const attachments = parseAttachments(client, html);
   const visibleAttachments = includeMedia ? attachments : attachments.filter((item) => !item.media);
 
-  console.log(JSON.stringify({
+  return {
     success: response.ok,
     id: Number(bugId),
     url: client.resolve(path),
@@ -95,5 +106,5 @@ export async function getBugDetail(client: ZentaoClient, bugId: string | undefin
     histories: parseHistories(html),
     attachments: visibleAttachments,
     mediaAttachmentsIgnored: includeMedia ? 0 : attachments.length - visibleAttachments.length,
-  }, null, 2));
+  };
 }

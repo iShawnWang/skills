@@ -44,15 +44,22 @@ function parseBugRows(client: ZentaoClient, html: string): BugSummary[] {
   return [...bugs.values()];
 }
 
-export async function listMyBugs(client: ZentaoClient): Promise<void> {
+export interface ListMyBugsResult {
+  success: boolean;
+  source: string;
+  count: number;
+  bugs: BugSummary[];
+}
+
+export async function listMyBugs(client: ZentaoClient): Promise<ListMyBugsResult> {
   await client.login();
   const sources = ["my-bug.html", "index.php?m=my&f=bug", "my/"];
   for (const source of sources) {
     const html = await client.text(source);
     const bugs = parseBugRows(client, html);
     if (bugs.length > 0 || source === sources[sources.length - 1]) {
-      console.log(JSON.stringify({ success: true, source, count: bugs.length, bugs }, null, 2));
-      return;
+      return { success: true, source, count: bugs.length, bugs };
     }
   }
+  return { success: true, source: sources[sources.length - 1], count: 0, bugs: [] };
 }

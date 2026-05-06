@@ -1,10 +1,10 @@
 {
   "name": "zentao-skill",
   "version": "0.1.0",
-  "description": "内网禅道集成插件，支持登录、查询指派给我的 Bug、评论和关闭 Bug",
+  "description": "内网禅道 HTTP 服务，支持查询、评论、指派、解决 Bug 和飞书通知",
   "type": "module",
   "scripts": {
-    "zentao": "npx tsx src/index.ts",
+    "serve": "npx tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
