@@ -22,6 +22,7 @@ gitlab-skills/
     └── commands/
         ├── user.ts        # 用户查询
         ├── repos.ts       # 仓库查询
+        ├── files.ts       # 读取文件与目录结构
         ├── branch.ts      # 创建分支
         ├── commit.ts      # 提交代码
         ├── merge.ts       # 合并分支
@@ -44,6 +45,8 @@ gitlab-skills/
 
 - **查询用户信息**: `npx tsx src/index.ts user [username]`
 - **查询仓库**: `npx tsx src/index.ts repos [关键词]`
+- **读取文件内容**: `npx tsx src/index.ts read [项目ID或名称] [文件路径] [ref]`
+- **列出目录结构**: `npx tsx src/index.ts tree [项目ID或名称] [路径] [ref] [recursive]`
 - **创建分支**: `npx tsx src/index.ts branch [项目ID或名称] [新分支] [基准分支]`
 - **提交代码并 push**: `npx tsx src/index.ts commit [项目ID或名称] [目标分支] [提交信息] [actions_json或@文件]`
 - **合并分支**: `npx tsx src/index.ts merge [项目ID或名称] [源分支] [目标分支] [标题]`（冲突时会自动返回 MR 地址）
