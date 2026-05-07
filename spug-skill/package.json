@@ -1,0 +1,13 @@
+{
+  "name": "spug-skill",
+  "type": "module",
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}
