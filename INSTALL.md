@@ -78,13 +78,13 @@ spug-skill init
 
 ### 执行安装命令
 ```bash
-npx skills add https://github.com/iShawnWang/skills/tree/main/gitlab-skills
+npx skills add https://github.com/iShawnWang/skills/tree/main/gitlab-skill
 ```
 
 ### 🔑 初始化配置
 执行初始化命令：
 ```bash
-gitlab-skills init
+gitlab-skill init
 ```
 
 **需要提供的信息：**
@@ -101,7 +101,7 @@ gitlab-skills init
 
 ### 测试 GitLab Skills
 ```bash
-gitlab-skills list-repos
+gitlab-skill list-repos
 ```
 
 ### 测试 QQC 小程序 CLI Skill
@@ -123,18 +123,18 @@ spug-skill list-apps
 
 ### 场景 1：合并分支
 ```
-使用 gitlab-skills 将 yeqiao-mobile 的 master-mp-changeAddress 分支合并到 master-mp-test 分支
+使用 gitlab-skill 将 yeqiao-mobile 的 master-mp-changeAddress 分支合并到 master-mp-test 分支
 ```
 
 ### 场景 2：合并并发布小程序
 ```
-使用 gitlab-skills 合并 yeqiao-mobile 的 master-mp-changeAddress 到 master-mp-test，
+使用 gitlab-skill 合并 yeqiao-mobile 的 master-mp-changeAddress 到 master-mp-test，
 然后使用 qqc-miniprogram-cli-skill 发布测试环境小程序
 ```
 
 ### 场景 3：合并并发布 H5
 ```
-使用 gitlab-skills 合并 yeqiao-mobile 的 master-H5-changeAddress 到 test 分支，
+使用 gitlab-skill 合并 yeqiao-mobile 的 master-H5-changeAddress 到 test 分支，
 然后使用 spug-skill 发布 new_h5 项目的 test 分支测试环境
 ```
 
@@ -148,7 +148,7 @@ spug-skill list-apps
 ## ⚠️ 常见问题
 
 ### Q1: 初始化时 AI 不问我参数怎么办？
-**A:** 手动在终端运行 `gitlab-skills init` 等命令，AI 会等待你的输入
+**A:** 手动在终端运行 `gitlab-skill init` 等命令，AI 会等待你的输入
 
 ### Q2: 密码输入时看不到字符？
 **A:** 正常现象，输完按回车即可

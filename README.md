@@ -4,7 +4,7 @@
 
 ## 核心技能
 
-### 1. GitLab 技能 (`gitlab-skills`)
+### 1. GitLab 技能 (`gitlab-skill`)
 提供了与 GitLab 实例深度交互的能力，支持：
 - **用户信息查询**: 获取用户权限和 ID。
 - **仓库管理**: 搜索和列出项目。

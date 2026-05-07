@@ -7,7 +7,7 @@
 ## 文件结构
 
 ```
-gitlab-skills/
+gitlab-skill/
 ├── package.json           # 项目配置
 ├── tsconfig.json          # TypeScript 配置
 ├── .env                   # 用户配置（自动生成，已 gitignore）
@@ -31,9 +31,9 @@ gitlab-skills/
 
 ## 如何分发给他人
 
-1. **打包**: 直接将整个 `gitlab-skills` 文件夹压缩发送给他人。
+1. **打包**: 直接将整个 `gitlab-skill` 文件夹压缩发送给他人。
 2. **安装**:
-   - 将 `gitlab-skills` 文件夹放入项目根目录。
+   - 将 `gitlab-skill` 文件夹放入项目根目录。
    - 在项目中配置 AI Skill 指向 `SKILL.md`。
 3. **初始化**:
    - 在 AI 对话框中输入：`帮我初始化 GitLab，token 是 [你的Token]，endpoint 是 [你的地址]`。

@@ -8,7 +8,7 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库、�
 此 Skill 提供与 GitLab 实例交互的能力。
 
 ## 执行须知
-- **工作目录**: 所有指令必须在 `gitlab-skills/` 目录下执行，或使用绝对路径 `npx tsx /path/to/gitlab-skills/src/index.ts`。
+- **工作目录**: 所有指令必须在 `gitlab-skill/` 目录下执行，或使用绝对路径 `npx tsx /path/to/gitlab-skill/src/index.ts`。
 - **输出格式**: 所有命令 stdout 输出 JSON，stderr 输出过程日志（不影响结果解析）。
 - **环境要求**: Node.js >= 18，无需预装依赖，`npx` 会自动下载 tsx。
 - **配置路径**: 固定读取当前 Skill 安装目录下的 `.env`，兼容旧版 `.env.gitlab`。
