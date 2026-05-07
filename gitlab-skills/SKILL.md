@@ -37,15 +37,34 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库、�
 - **调用场景**: 需要寻找特定项目 ID 或查看项目列表时。
 - **指令**: `npx tsx src/index.ts repos [search]`
 
-### 3. 创建分支 (Create Branch)
+### 3. 读取文件内容 (Read)
+读取仓库中指定文件的内容。
+- **参数支持**:
+    - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
+    - **文件路径**: 仓库内的相对路径（如 `src/main.ts`）。
+    - **ref**: 可选，分支名、Tag 或 Commit ID。默认使用项目默认分支。
+- **调用场景**: 需要查看代码内容、配置文件或文档时。
+- **指令**: `npx tsx src/index.ts read "my-repo" "src/index.ts" "main"`
+
+### 4. 列出目录结构 (Tree)
+获取仓库中某个目录的文件列表。
+- **参数支持**:
+    - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
+    - **路径**: 可选，子目录路径（如 `src/`）。默认为根目录。
+    - **ref**: 可选，分支名、Tag 或 Commit ID。
+    - **recursive**: 可选，传 `true` 则递归列出所有子目录。
+- **调用场景**: 需要了解项目结构、查找文件位置时。
+- **指令**: `npx tsx src/index.ts tree "my-repo" "src" "main" "true"`
+
+### 5. 创建分支 (Create Branch)
 基于某个已有分支创建新分支。
 - **参数支持**:
     - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
     - **基准分支**: 支持传入 `完整分支名` 或 `模糊分支名` (自动寻找最匹配的分支)。
-- **调用场景**: 开始新需求、修复问题、发布准备，或用户要求“基于某个分支创建新分支”时。
+- **调用场景**: 开始 new 需求、修复问题、发布准备，或用户要求“基于某个分支创建新分支”时。
 - **指令**: `npx tsx src/index.ts branch "my-repo" "feature/new-task" "main"`
 
-### 4. 提交代码并 push (Commit)
+### 6. 提交代码并 push (Commit)
 在指定远程分支创建一次提交。该命令使用 GitLab Commits API 直接提交到远程分支，相当于完成 push。
 - **参数支持**:
     - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
@@ -65,7 +84,7 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库、�
 - **调用场景**: 用户要求“在某个分支提交代码并 push”、需要远程创建/更新/删除文件时。
 - **指令**: `npx tsx src/index.ts commit "my-repo" "feature/new-task" "docs: update readme" @actions.json`
 
-### 5. 合并分支 (Merge Branches)
+### 7. 合并分支 (Merge Branches)
 将一个分支的代码合并到另一个分支（通过创建并自动合并 Merge Request 实现）。
 - **参数支持**:
     - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。

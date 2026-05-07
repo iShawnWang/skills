@@ -97,6 +97,28 @@ export interface GitLabCommit {
   committed_date: string;
 }
 
+/** GitLab 文件内容 */
+export interface GitLabFile {
+  file_name: string;
+  file_path: string;
+  size: number;
+  encoding: string;
+  content: string;
+  ref: string;
+  blob_id: string;
+  commit_id: string;
+  last_commit_id: string;
+}
+
+/** GitLab 目录结构项 */
+export interface GitLabTreeItem {
+  id: string;
+  name: string;
+  type: "tree" | "blob";
+  path: string;
+  mode: string;
+}
+
 /** 应用配置 */
 export interface AppConfig {
   accessToken: string;

@@ -5,6 +5,7 @@ import { getRepos } from "./commands/repos.js";
 import { mergeBranches } from "./commands/merge.js";
 import { createBranch } from "./commands/branch.js";
 import { commitToBranch } from "./commands/commit.js";
+import { getFileContent, listTree } from "./commands/files.js";
 
 const USAGE = `用法: npx tsx src/index.ts <command> [参数]
 
@@ -12,6 +13,8 @@ const USAGE = `用法: npx tsx src/index.ts <command> [参数]
   init <token> <endpoint>                              初始化配置
   user [username]                                      查询用户信息
   repos [search]                                       查询/搜索仓库
+  read <project_id_or_name> <file_path> [ref]          读取文件内容
+  tree <project_id_or_name> [path] [ref] [recursive]   列出目录结构
   branch <project_id_or_name> <new_branch> <ref>       基于某个分支创建新分支
   commit <project_id_or_name> <branch> <message> <actions_json_or_@file>
                                                        在某个分支提交代码并 push
@@ -43,6 +46,14 @@ async function main(): Promise<void> {
 
     case "repos":
       await getRepos(client, args[1]);
+      break;
+
+    case "read":
+      await getFileContent(client, args[1], args[2], args[3]);
+      break;
+
+    case "tree":
+      await listTree(client, args[1], args[2], args[3], args[4] === "true");
       break;
 
     case "merge":
