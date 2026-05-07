@@ -54,7 +54,12 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库、�
     - **ref**: 可选，分支名、Tag 或 Commit ID。
     - **recursive**: 可选，传 `true` 则递归列出所有子目录。
 - **调用场景**: 需要了解项目结构、查找文件位置时。
-- **指令**: `npx tsx src/index.ts tree "my-repo" "src" "main" "true"`
+- **优化说明**: 输出格式已优化为极简字符串数组（`D path` 表示目录，`F path` 表示文件），显著节省 token。
+- **AI 使用建议**:
+    1. **优先按需探索**: 默认情况下不建议使用 `recursive=true`。应先查看根目录，再根据需要进入特定子目录（如 `src/`）。
+    2. **避免全量扫描**: 只有在完全不清楚文件位置且项目规模较小时才使用递归。对于大型项目，全量递归可能会导致输出过长。
+    3. **利用 count**: 结果包含 `count` 字段，AI 可据此判断目录复杂度。
+- **指令**: `npx tsx src/index.ts tree "my-repo" "src" "main" "false"`
 
 ### 5. 创建分支 (Create Branch)
 基于某个已有分支创建新分支。
