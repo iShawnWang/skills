@@ -9,42 +9,36 @@ This skill provides a zero-runtime-dependency TypeScript CLI for Spug.
 
 ## Initialization (Required Before First Action)
 
-Before running any command, ask the user to provide:
+Before running any command for the first time, ask the user to provide:
 
 1. Spug login `username`
 2. Spug login `password`
 3. Spug local deployment `ip`
-4. Spug local deployment `port`
+4. Spug local deployment `port` (or full `base-url`)
 
-Question template:
+### Persistence Mechanism
+Once successfully initialized, these values are stored in a local `.env` file. **Subsequent calls do not require these parameters** unless the user wants to switch environments.
 
-- 请提供 Spug 登录用户名
-- 请提供 Spug 登录密码
-- 请提供 Spug 本地部署 IP
-- 请提供 Spug 本地部署端口（例如 `80`、`443`、`8001`）
-
-Base URL construction rule:
-
-- If the user does not provide a full URL, construct `--base-url` as `http://<ip>:<port>`.
-- If the port is `443`, prefer `https://<ip>` unless the user explicitly says HTTP.
-- If the user already provides full `http://` or `https://` URL, use it directly.
-- Do not execute deployment commands until all four initialization fields are confirmed.
-
-## Runtime
-
-- Node `20+`
-- Execute with `npx tsx src/cli.ts ...`
-- Runtime dependencies are limited to Node built-ins; `tsx`, `typescript`, and `@types/node` are dev-only.
+### Base URL construction rule:
+- Use `--ip <ip> --port <port>` to let the CLI construct the URL.
+- If the user provides a full URL, use `--base-url <url>`.
+- Do not execute deployment commands until initialization fields are provided at least once.
 
 ## Commands
 
+### First run (Initializes .env)
 ```bash
-npx tsx src/cli.ts list-envs --base-url https://demo.spug.cc --username admin --password 'spug.cc'
-npx tsx src/cli.ts list-apps --base-url https://demo.spug.cc --username admin --password 'spug.cc'
-npx tsx src/cli.ts list-deploys --base-url https://demo.spug.cc --username admin --password 'spug.cc'
-npx tsx src/cli.ts list-versions --base-url https://demo.spug.cc --username admin --password 'spug.cc' --app api_order --env pro
-npx tsx src/cli.ts create-request --base-url https://demo.spug.cc --username admin --password 'spug.cc' --app api_order --env pro --name 'release test' --branch 1.x --commit 67c137da9ea1bc451bfa1c34ebfb35c4821825c2
-npx tsx src/cli.ts deploy-and-watch --base-url https://demo.spug.cc --username admin --password 'spug.cc' --app api_order --env pro --name 'release test' --branch 1.x --commit 67c137da9ea1bc451bfa1c34ebfb35c4821825c2 --json
+npx tsx src/cli.ts login --ip 1.2.3.4 --port 8080 --username admin --password 'secret'
+```
+
+### Subsequent runs (Parameters are optional)
+```bash
+npx tsx src/cli.ts list-envs
+npx tsx src/cli.ts list-apps
+npx tsx src/cli.ts list-deploys
+npx tsx src/cli.ts list-versions --app api_order --env pro
+npx tsx src/cli.ts create-request --app api_order --env pro --name 'release test' --branch 1.x --commit 67c137d
+npx tsx src/cli.ts deploy-and-watch --app api_order --env pro --name 'release test' --branch 1.x --commit 67c137d --json
 ```
 
 ## Resolution Rules

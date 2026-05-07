@@ -1,13 +1,36 @@
 #!/usr/bin/env node
 
+import * as fs from "node:fs";
+import * as path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 import { SpugClient } from "./spug-client.js";
 import type { AppSummary, DeployConfig, Environment, ReleaseRequest, VersionsPayload } from "./types.js";
 
 type Flags = Record<string, string[]>;
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ENV_PATH = path.resolve(__dirname, "../.env");
+
+function loadEnv() {
+  if (!fs.existsSync(ENV_PATH)) return;
+  const content = fs.readFileSync(ENV_PATH, "utf-8");
+  for (const line of content.split("\n")) {
+    const [key, ...valueParts] = line.split("=");
+    if (key && valueParts.length > 0) {
+      process.env[key.trim()] = valueParts.join("=").trim();
+    }
+  }
+}
+
+function saveEnv(config: Record<string, string>) {
+  const lines = Object.entries(config).map(([key, value]) => `${key}=${value}`);
+  fs.writeFileSync(ENV_PATH, lines.join("\n") + "\n");
+}
+
 async function main(): Promise<void> {
+  loadEnv();
   const [command, ...argv] = process.argv.slice(2);
   if (!command || command === "help" || command === "--help") {
     printHelp();
@@ -15,10 +38,36 @@ async function main(): Promise<void> {
   }
 
   const flags = parseFlags(argv);
-  const baseUrl = requireOne(flags, "base-url");
-  const username = requireOne(flags, "username");
-  const password = requireOne(flags, "password");
+
+  let baseUrl = optionalOne(flags, "base-url") || process.env.SPUG_BASE_URL;
+  const username = optionalOne(flags, "username") || process.env.SPUG_USERNAME;
+  const password = optionalOne(flags, "password") || process.env.SPUG_PASSWORD;
+
+  const ip = optionalOne(flags, "ip") || process.env.SPUG_IP;
+  const port = optionalOne(flags, "port") || process.env.SPUG_PORT;
+
+  if (!baseUrl && ip && port) {
+    baseUrl = port === "443" ? `https://${ip}` : `http://${ip}:${port}`;
+  }
+
+  if (!baseUrl || !username || !password) {
+    console.error("Error: Missing configuration. Please provide via flags or .env file.");
+    console.error("Required: --base-url (or --ip and --port), --username, --password");
+    process.exit(1);
+  }
+
   const json = hasFlag(flags, "json");
+
+  // Save to .env if provided via flags and different from current env
+  const newConfig: Record<string, string> = {
+    SPUG_USERNAME: username,
+    SPUG_PASSWORD: password,
+  };
+  if (baseUrl) newConfig.SPUG_BASE_URL = baseUrl;
+  if (ip) newConfig.SPUG_IP = ip;
+  if (port) newConfig.SPUG_PORT = port;
+
+  saveEnv(newConfig);
 
   const client = new SpugClient(baseUrl);
   await client.login({ username, password });
@@ -322,7 +371,14 @@ function printHelp(): void {
   console.log(`spug-skill
 
 Usage:
-  npx tsx src/cli.ts <command> --base-url <url> --username <user> --password <password> [flags]
+  npx tsx src/cli.ts <command> [flags]
+
+Configuration flags (stored in .env after first use):
+  --base-url <url>      Spug base URL (e.g. http://localhost:8000)
+  --ip <ip>             Spug server IP
+  --port <port>         Spug server port (default 80, 443 uses https)
+  --username <user>     Spug login username
+  --password <password> Spug login password
 
 Commands:
   login

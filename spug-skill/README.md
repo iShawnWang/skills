@@ -15,18 +15,20 @@
 
 ## 初始化信息（首次使用先确认）
 
-在执行任何命令前，先准备以下信息：
+在执行任何命令前，先准备以下信息。首次成功运行后，这些信息将自动存入当前目录下的 `.env` 文件中，后续运行无需再次输入。
 
 - Spug 登录用户名
 - Spug 登录密码
-- Spug 本地部署 IP
+- Spug 本地部署 IP (或完整 `base-url`)
 - Spug 本地部署端口
 
-若用户只提供了 IP 和端口，可按以下规则拼接 `--base-url`：
+### 参数规则
 
-- 默认使用 `http://<ip>:<port>`
-- 端口为 `443` 时，优先使用 `https://<ip>`（除非用户明确要求 HTTP）
-- 若用户已提供完整 `http://` 或 `https://` 地址，则直接使用
+- **直接提供 URL**：使用 `--base-url http://<ip>:<port>`
+- **按 IP/端口提供**：使用 `--ip <ip> --port <port>`
+  - 默认使用 `http://<ip>:<port>`
+  - 端口为 `443` 时，自动使用 `https://<ip>`
+- **持久化**：首次运行带参数的命令（如 `login`）后，配置会保存到 `.env`。后续只需运行 `npx tsx src/cli.ts <command>` 即可。
 
 ## 运行前提
 
@@ -39,63 +41,52 @@
 pnpm install
 ```
 
-类型检查：
-
-```bash
-pnpm exec tsc --noEmit
-```
-
 ## 命令入口
 
+首次运行或更新配置：
+
 ```bash
-pnpm exec tsx src/cli.ts <command> --base-url <url> --username <user> --password <password> [flags]
+npx tsx src/cli.ts <command> --ip <ip> --port <port> --username <user> --password <pass>
 ```
 
-也可以直接用：
+后续运行（自动读取 `.env`）：
 
 ```bash
-npx tsx src/cli.ts <command> --base-url <url> --username <user> --password <password> [flags]
+npx tsx src/cli.ts <command> [flags]
 ```
 
 ## 支持命令
 
-### 1. 登录连通性检查
+### 1. 登录连通性检查并保存配置
 
 ```bash
+# 首次运行（会自动保存到 .env）
 pnpm exec tsx src/cli.ts login \
-  --base-url https://demo.spug.cc \
+  --ip 127.0.0.1 \
+  --port 8080 \
   --username admin \
   --password 'spug.cc'
+
+# 之后直接运行
+pnpm exec tsx src/cli.ts login
 ```
 
 ### 2. 查询环境
 
 ```bash
-pnpm exec tsx src/cli.ts list-envs \
-  --base-url https://demo.spug.cc \
-  --username admin \
-  --password 'spug.cc' \
-  --json
+pnpm exec tsx src/cli.ts list-envs --json
 ```
 
 ### 3. 查询应用
 
 ```bash
-pnpm exec tsx src/cli.ts list-apps \
-  --base-url https://demo.spug.cc \
-  --username admin \
-  --password 'spug.cc' \
-  --json
+pnpm exec tsx src/cli.ts list-apps --json
 ```
 
 ### 4. 查询发布配置
 
 ```bash
-pnpm exec tsx src/cli.ts list-deploys \
-  --base-url https://demo.spug.cc \
-  --username admin \
-  --password 'spug.cc' \
-  --json
+pnpm exec tsx src/cli.ts list-deploys --json
 ```
 
 按应用 ID 过滤：
