@@ -253,7 +253,7 @@ async function callTool(pathname: string, body: RequestBody, watchManager: Watch
     }
     case "/bug_detail": {
       const client = new ZentaoClient(loadConfig());
-      return getBugDetail(client, requireBugId(body), Boolean(body.includeMedia));
+      return getBugDetail(client, requireBugId(body), body.includeMedia ?? true);
     }
     case "/comment_bug": {
       const client = new ZentaoClient(loadConfig());

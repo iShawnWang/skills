@@ -83,7 +83,7 @@ function parseAttachments(client: ZentaoClient, html: string): AttachmentSummary
   return attachments;
 }
 
-export async function getBugDetail(client: ZentaoClient, bugId: string | undefined, includeMedia = false): Promise<BugDetailResult> {
+export async function getBugDetail(client: ZentaoClient, bugId: string | undefined, includeMedia = true): Promise<BugDetailResult> {
   if (!bugId) {
     throw new Error("bugId is required");
   }

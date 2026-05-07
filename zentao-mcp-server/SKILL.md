@@ -58,7 +58,7 @@ POST /comment_bug
 POST /bug_detail
 ```
 
-读取 `bug-view-{id}.html`，输出标题、重现步骤、右侧基本信息、Bug 生命周期、历史记录和非媒体附件链接。默认忽略图片、视频等媒体附件内容，不下载附件；只有用户明确要求查看图片/视频等附件时，才传 `includeMedia=true` 并继续处理附件链接。
+读取 `bug-view-{id}.html`，输出标题、重现步骤、右侧基本信息、Bug 生命周期、历史记录和附件链接。**默认包含图片、视频等媒体附件链接 (`includeMedia=true`)**。如果需要忽略媒体文件以节省 token，可传 `includeMedia=false`。服务不会自动下载附件，仅返回链接。
 
 ### 5. 指派 Bug
 
