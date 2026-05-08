@@ -72,7 +72,23 @@ export async function mergeBranches(
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (/no commits|source branch is the same|empty/i.test(message)) {
+    if (/Another open merge request already exists/i.test(message)) {
+      console.error("检测到已存在的 Merge Request，正在尝试获取...");
+      const existingMrs = await client.get<GitLabMergeRequest[]>(
+        `/projects/${projectId}/merge_requests`,
+        {
+          source_branch: sourceBranch,
+          target_branch: targetBranch,
+          state: "opened",
+        }
+      );
+      if (existingMrs.length > 0) {
+        mr = existingMrs[0];
+        console.error(`获取到现有 MR (IID: ${mr.iid})`);
+      } else {
+        throw err;
+      }
+    } else if (/no commits|source branch is the same|empty/i.test(message)) {
       console.log(JSON.stringify({
         success: true,
         message: "已经是最新，无需合并",
@@ -80,11 +96,12 @@ export async function mergeBranches(
         target_branch: targetBranch,
       }));
       return;
+    } else {
+      throw err;
     }
-    throw err;
   }
 
-  if (!mr.iid) {
+  if (!mr || !mr.iid) {
     console.log(JSON.stringify({ success: false, error: "创建 Merge Request 失败", detail: mr }));
     process.exit(1);
     return;
@@ -121,9 +138,7 @@ export async function mergeBranches(
   const maxAttempts = 15; // 最多等待 30s
   while (attempts < maxAttempts) {
     // 检查是否可以合并
-    // 注意: GitLab API 的 merge_status 可能在 'unchecked' 或 'checking'
     if (currentMr.merge_status === "can_be_merged" && !currentMr.has_conflicts) {
-      console.error("状态检查通过，准备合并。");
       break;
     }
 
@@ -153,11 +168,11 @@ export async function mergeBranches(
 
   // 7. 接受（合并）Merge Request
   try {
+    console.error(`正在尝试通过 PUT /merge 合并 MR !${mr.iid}...`);
     const mergeResult = await client.put<GitLabMergeRequest>(
       `/projects/${projectId}/merge_requests/${mr.iid}/merge`,
       {
         should_remove_source_branch: false,
-        merge_when_pipeline_succeeds: true, // 如果流水线在跑，等它跑完自动合
       }
     );
 
@@ -178,10 +193,11 @@ export async function mergeBranches(
       }));
     }
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     console.log(JSON.stringify({
       success: false,
       message: "合并失败",
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMsg,
       mr_url: mr.web_url,
     }));
   }
