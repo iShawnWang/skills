@@ -40,7 +40,7 @@ export function getLatestCommitHash() {
   })
 }
 
-async function sendFeishuNotification(message) {
+export async function sendFeishuNotification(message) {
   if (!FEISHU_URL) {
     console.error('FEISHU_WEBHOOK_URL is not defined in .env')
     return

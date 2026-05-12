@@ -1,12 +1,25 @@
 import express from 'express'
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 import { state, setBuilding } from './state.mjs'
-import { triggerBuild, getLatestCommitHash } from './build.mjs'
+import { triggerBuild, getLatestCommitHash, sendFeishuNotification } from './build.mjs'
 
 const app = express()
 const PORT = 3000
 const LOG_FILE = path.join(process.cwd(), 'builds.log')
+
+function getLocalIP() {
+  const interfaces = os.networkInterfaces()
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address
+      }
+    }
+  }
+  return '-'
+}
 
 app.use(express.json())
 
@@ -75,5 +88,12 @@ app.get(['/', '/health'], (req, res) => {
 })
 
 app.listen(PORT, () => {
+  const ip = getLocalIP()
+  const time = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
+  const keyword = process.env.NOTIFICATION_KEYWORD || '[YQ]'
+
   console.log(`Server is running on http://localhost:${PORT}`)
+  console.log(`Server IP: ${ip}`)
+
+  sendFeishuNotification(`${keyword} 构建服务已启动\n时间: ${time}\n地址: http://${ip}:${PORT}\n环境: ${process.env.NODE_ENV || 'production'}`)
 })

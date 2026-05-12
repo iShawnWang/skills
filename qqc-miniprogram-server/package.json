@@ -1,15 +1,13 @@
 {
   "name": "qqc-miniprogram-server",
   "version": "1.0.0",
+  "type": "module",
   "main": "server.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.mjs",
+    "server": "pm2 start server.mjs --name qqc-mp-server"
   },
-  "author": "",
-  "license": "GPL-3.0",
-  "description": "",
   "dependencies": {
-    "express": "^5.2.1",
-    "miniprogram-ci": "^2.1.31"
+    "express": "^4.21.0"
   }
 }
