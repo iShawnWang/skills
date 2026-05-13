@@ -338,6 +338,30 @@ export function startServer(options?: { silent?: boolean }): { listen(port: numb
         health: `http://127.0.0.1:${serverConfig.port}/health`,
       }));
     }
+
+    // 自动 watch wangshuai
+    if (serverConfig.feishuWebhookUrl) {
+      const assignee = "wangshuai";
+      watchManager.start(assignee, serverConfig.defaultWatchIntervalMs)
+        .then(() => {
+          if (!options?.silent) {
+            console.log(JSON.stringify({
+              success: true,
+              message: `auto-watch started for ${assignee}`,
+              assignee,
+            }));
+          }
+        })
+        .catch((err) => {
+          if (!options?.silent) {
+            console.error(JSON.stringify({
+              success: false,
+              message: `auto-watch failed for ${assignee}`,
+              error: err instanceof Error ? err.message : String(err),
+            }));
+          }
+        });
+    }
   });
   return server;
 }
