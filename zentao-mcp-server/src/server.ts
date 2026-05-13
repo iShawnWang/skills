@@ -339,9 +339,9 @@ export function startServer(options?: { silent?: boolean }): { listen(port: numb
       }));
     }
 
-    // 自动 watch wangshuai
-    if (serverConfig.feishuWebhookUrl) {
-      const assignee = "wangshuai";
+    // 自动 watch 配置的 assignee
+    if (serverConfig.feishuWebhookUrl && serverConfig.autoWatchAssignee) {
+      const assignee = serverConfig.autoWatchAssignee;
       watchManager.start(assignee, serverConfig.defaultWatchIntervalMs)
         .then(() => {
           if (!options?.silent) {

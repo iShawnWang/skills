@@ -96,6 +96,7 @@ export interface ServerConfig {
   feishuWebhookUrl?: string;
   feishuKeywordPrefix?: string;
   defaultWatchIntervalMs: number;
+  autoWatchAssignee?: string;
   stateDir: string;
   stateFile: string;
 }
@@ -109,6 +110,7 @@ export function getServerConfig(): ServerConfig {
     feishuWebhookUrl: env.FEISHU_WEBHOOK_URL || undefined,
     feishuKeywordPrefix: env.FEISHU_KEYWORD_PREFIX || undefined,
     defaultWatchIntervalMs: Number(env.BUG_WATCH_INTERVAL_MS || DEFAULT_WATCH_INTERVAL_MS),
+    autoWatchAssignee: env.AUTO_WATCH_ASSIGNEE || undefined,
     stateDir,
     stateFile: join(stateDir, "watch-state.json"),
   };
