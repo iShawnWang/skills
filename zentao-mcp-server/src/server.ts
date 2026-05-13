@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { networkInterfaces } from "node:os";
 import { getConfigStatus, getServerConfig, loadConfig, type ServerConfig } from "./config.js";
 import { ZentaoClient } from "./client.js";
 import { listMyBugs } from "./commands/bugs.js";
@@ -67,6 +68,39 @@ function json(res: ServerResponse, statusCode: number, payload: Record<string, u
   res.statusCode = statusCode;
   res.setHeader("content-type", "application/json; charset=utf-8");
   res.end(JSON.stringify(payload, null, 2));
+}
+
+function getLocalIp(): string {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return "127.0.0.1";
+}
+
+async function sendStartupNotification(config: ServerConfig, ip: string, port: number, autoWatchPerson: string | undefined) {
+  if (!config.feishuWebhookUrl) return;
+
+  const header = `${config.feishuKeywordPrefix ? `${config.feishuKeywordPrefix} ` : ""}禅道 MCP 服务已启动`.trim();
+  const content = [
+    header,
+    `服务地址: http://${ip}:${port}`,
+    `自动监听: ${autoWatchPerson || "未开启"}`,
+  ].join("\n");
+
+  try {
+    await fetch(config.feishuWebhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ msg_type: "text", content: { text: content } }),
+    });
+  } catch (error) {
+    console.error("Failed to send startup notification to Feishu:", error);
+  }
 }
 
 function ok(res: ServerResponse, data: unknown): void {
@@ -329,15 +363,20 @@ export function startServer(options?: { silent?: boolean }): { listen(port: numb
     }
   });
 
-  server.listen(serverConfig.port, "127.0.0.1", () => {
+  server.listen(serverConfig.port, "0.0.0.0", () => {
+    const ip = getLocalIp();
     if (!options?.silent) {
       console.log(JSON.stringify({
         success: true,
         message: "zentao http server listening",
         port: serverConfig.port,
+        ip,
         health: `http://127.0.0.1:${serverConfig.port}/health`,
       }));
     }
+
+    // 发送启动通知
+    void sendStartupNotification(serverConfig, ip, serverConfig.port, serverConfig.autoWatchAssignee);
 
     // 自动 watch 配置的 assignee
     if (serverConfig.feishuWebhookUrl && serverConfig.autoWatchAssignee) {
