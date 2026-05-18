@@ -1,6 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { getConfigStatus, getServerConfig, loadConfig, type ServerConfig } from "./config.js";
 import { ZentaoClient } from "./client.js";
 import { listMyBugs } from "./commands/bugs.js";
@@ -282,6 +284,17 @@ function requireBugId(body: RequestBody): string {
 
 async function callTool(pathname: string, body: RequestBody, watchManager: WatchManager): Promise<unknown> {
   switch (pathname) {
+    case "/help": {
+      const skillMdPath = join(dirname(fileURLToPath(import.meta.url)), "..", "SKILL.md");
+      try {
+        if (existsSync(skillMdPath)) {
+          return { content: readFileSync(skillMdPath, "utf-8") };
+        }
+        return { message: "SKILL.md not found" };
+      } catch (error) {
+        return { error: `Failed to read SKILL.md: ${error instanceof Error ? error.message : String(error)}` };
+      }
+    }
     case "/status":
       return getConfigStatus();
     case "/login": {
