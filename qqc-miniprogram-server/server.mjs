@@ -200,6 +200,13 @@ const buildHandler = async (req, res) => {
 app.get('/build', buildHandler)
 app.post('/build', buildHandler)
 app.get('/status', (req, res) => res.json({ isBuilding: state.isBuilding }))
+app.get('/last-build', (req, res) => res.json(state.lastBuild))
+app.get('/builds', (req, res) => {
+  if (!fs.existsSync(LOG_FILE)) return res.send('No builds yet.')
+  const content = fs.readFileSync(LOG_FILE, 'utf-8')
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+  res.send(content)
+})
 app.get('/log', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
   res.send(state.log)
