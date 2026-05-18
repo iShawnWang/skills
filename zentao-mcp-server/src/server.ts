@@ -368,6 +368,18 @@ export function startServer(options?: { silent?: boolean }): { listen(port: numb
         ok(res, { ok: true });
         return;
       }
+
+      if (url.pathname === "/help" && req.method === "GET") {
+        const skillMdPath = join(dirname(fileURLToPath(import.meta.url)), "..", "SKILL.md");
+        if (existsSync(skillMdPath)) {
+          res.setHeader("content-type", "text/plain; charset=utf-8");
+          res.end(readFileSync(skillMdPath, "utf-8"));
+        } else {
+          fail(res, 404, "NOT_FOUND", "SKILL.md not found");
+        }
+        return;
+      }
+
       if (req.method !== "POST") {
         fail(res, 405, "METHOD_NOT_ALLOWED", "only POST is supported");
         return;
