@@ -120,20 +120,27 @@ async function readJsonBody(req: IncomingMessage): Promise<RequestBody> {
 }
 
 function loadWatchState(config: ServerConfig): WatchStateStore {
-  if (!existsSync(config.stateFile)) return {};
   try {
-    const parsed = JSON.parse(readFileSync(config.stateFile, "utf-8")) as WatchStateStore;
+    if (!existsSync(config.stateFile)) return {};
+    const content = readFileSync(config.stateFile, "utf-8");
+    if (!content.trim()) return {};
+    const parsed = JSON.parse(content) as WatchStateStore;
     for (const item of Object.values(parsed)) {
       item.lastCheckedAt = normalizeStoredDateTime(item.lastCheckedAt);
     }
     return parsed;
-  } catch {
+  } catch (error) {
+    console.error(`[loadWatchState] Failed to load ${config.stateFile}:`, error);
     return {};
   }
 }
 
 function saveWatchState(config: ServerConfig, state: WatchStateStore): void {
-  writeFileSync(config.stateFile, JSON.stringify(state, null, 2), "utf-8");
+  try {
+    writeFileSync(config.stateFile, JSON.stringify(state, null, 2), "utf-8");
+  } catch (error) {
+    console.error(`[saveWatchState] Failed to save ${config.stateFile}:`, error);
+  }
 }
 
 async function notifyFeishu(

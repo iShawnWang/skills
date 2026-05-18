@@ -104,7 +104,11 @@ export interface ServerConfig {
 export function getServerConfig(): ServerConfig {
   const env = existsSync(ENV_FILE) ? parseEnvFile(readFileSync(ENV_FILE, "utf-8")) : {};
   const stateDir = join(__dirname, "..", "data");
-  mkdirSync(stateDir, { recursive: true });
+  try {
+    mkdirSync(stateDir, { recursive: true });
+  } catch (error) {
+    console.error(`[getServerConfig] Failed to create state directory ${stateDir}:`, error);
+  }
   return {
     port: Number(env.HTTP_PORT || DEFAULT_HTTP_PORT),
     feishuWebhookUrl: env.FEISHU_WEBHOOK_URL || undefined,
