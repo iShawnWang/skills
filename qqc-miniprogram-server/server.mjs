@@ -16,23 +16,34 @@ const PORT = 3000
 
 const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
 
-该服务提供乔乔车小程序的自动化构建与状态查询功能。
+该服务提供乔乔车小程序的自动化构建与状态查询功能，支持 MCP 协议与传统 HTTP 接口。
 
 ## 🛠 MCP 接入方式
-1. **SSE 模式 (标准 MCP)**:
-   - URL: http://<服务器IP>:3000/sse
-2. **Streamable HTTP 模式 (Opencode 兼容)**:
-   - URL: http://<服务器IP>:3000/mcp (POST)
 
-## 🌐 核心功能
-- **trigger_build**: 触发一个新的小程序构建流程。
-- **get_build_status**: 检查当前是否正在构建。
-- **get_build_log**: 获取最新构建日志。
-- **get_last_build_info**: 获取上次成功构建信息。
-- **get_help**: 获取本帮助文档。
+1. **SSE 模式 (标准 MCP)**:
+   - **URL**: http://<服务器IP>:3000/sse
+   - **传输协议**: SSE (Server-Sent Events)
+   - **适用**: Trae, Claude Desktop, Cursor 等 AI 客户端。
+
+2. **Streamable HTTP 模式 (Opencode 兼容)**:
+   - **URL**: http://<服务器IP>:3000/mcp
+   - **方法**: POST
+   - **适用**: Opencode 等需要单接口 POST 调用的工具。
+
+## 🌐 HTTP API 接口 (传统模式)
+
+| 接口 | 方法 | 说明 |
+| :--- | :--- | :--- |
+| **/help** | GET | 返回本中文帮助文档 (Markdown 格式) |
+| **/build** | POST/GET | 触发一次新的小程序构建 |
+| **/status** | GET | 返回当前构建状态 (isBuilding: true/false) |
+| **/log** | GET | 获取当前或最近一次构建的实时详细日志 |
+| **/last-build** | GET | 获取上次成功构建的 Commit Hash 和时间 |
+| **/builds** | GET | 获取所有历史构建触发记录 (IP、时间、Commit) |
+| **/health** | GET | 服务健康检查 |
 
 ---
-*注：详细 HTTP 接口见 /help 接口返回。*`
+*注：构建启动、成功或失败时，系统会自动发送实时通知至飞书群。*`
 
 // --- MCP Server Setup ---
 
