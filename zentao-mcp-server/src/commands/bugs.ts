@@ -52,14 +52,28 @@ export interface ListMyBugsResult {
 }
 
 export async function listMyBugs(client: ZentaoClient): Promise<ListMyBugsResult> {
-  await client.login();
+  const loginResult = await client.login();
+  if (!loginResult.success && loginResult.message === "未找到登录表单") {
+    // 已经登录过，或者页面异常。我们继续。
+  } else if (!loginResult.success) {
+    throw new Error(`登录禅道失败: ${loginResult.message}`);
+  }
+
   const sources = ["my-bug.html", "index.php?m=my&f=bug", "my/"];
   for (const source of sources) {
     const html = await client.text(source);
+
+    // 检查是否被重定向到了登录页
+    if (html.includes("user-login.html") || html.includes("account") && html.includes("password") && html.includes("<form")) {
+      throw new Error("禅道会话已过期或重定向至登录页");
+    }
+
     const bugs = parseBugRows(client, html);
-    if (bugs.length > 0 || source === sources[sources.length - 1]) {
+    // 如果找到了 bug，或者这是最后一个尝试的源且 HTML 看起来像是一个合法的禅道页面
+    const isZentaoPage = html.includes("zentao") || html.includes("z-") || html.includes("bug");
+    if (bugs.length > 0 || (source === sources[sources.length - 1] && isZentaoPage)) {
       return { success: true, source, count: bugs.length, bugs };
     }
   }
-  return { success: true, source: sources[sources.length - 1], count: 0, bugs: [] };
+  throw new Error("无法从禅道获取 Bug 列表，页面解析失败或会话异常");
 }
