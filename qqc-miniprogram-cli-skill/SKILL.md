@@ -1,78 +1,66 @@
 ---
 name: "乔乔车小程序打包发布 skill"
-description: "管理乔乔车小程序的自动化构建服务。支持触发构建、查询状态、获取日志和健康检查。当用户首次使用时，需引导其提供 iMac 打包机的 IP 和端口。支持发布测试环境、体验版等场景。"
+description: "管理乔乔车小程序的自动化构建服务。支持通过 HTTP API 或 MCP SSE 协议触发构建、查询状态和获取日志。适用于远程打包机环境。"
 ---
 
 # 乔乔车小程序打包发布 skill 指南
 
-该 Skill 用于管理位于 `server/` 目录下的自动化构建服务。
+该 Skill 用于管理位于远程打包机（如 iMac）上的自动化构建服务。支持 **MCP (Model Context Protocol)** 和 **传统 HTTP** 两种调用方式。
 
-## 🚀 第一次初始化 (必须)
+## 🌐 服务连接信息
 
-当 AI 助手第一次被要求执行打包任务时，**必须**遵循以下步骤：
+- **服务器地址**: `http://{{iMac_IP}}:{{iMac_Port}}` (默认端口 3000)
+- **MCP SSE 端点**: `http://{{iMac_IP}}:{{iMac_Port}}/sse`
+- **帮助文档接口**: `http://{{iMac_IP}}:{{iMac_Port}}/help`
 
-1.  **询问配置**: 检查当前 Skill 定义中是否包含有效的 `iMac_IP` 和 `iMac_Port`。
-2.  **提示用户**: 如果未配置，请提示用户：“检测到是首次使用打包 Skill，请提供 iMac 打包机的**内网 IP**（例如 192.168.x.x）和**端口号**（默认为 3000）。”
-3.  **记录配置**: 用户提供后，AI 助手应执行 `qqc_miniprogram_tool.sh init <iMac_IP> [iMac_Port]`，将配置保存到当前 Skill 安装目录下的 `.env` 文件（权限 600）。
+---
 
-## 配置规则
+## 🛠 调用方式
 
-- **配置文件**: 固定使用当前 Skill 安装目录下的 `.env`
-- **推荐命令**: `./qqc_miniprogram_tool.sh init 192.168.x.x 3000`
-- **查看当前配置**: `./qqc_miniprogram_tool.sh show`
+### 1. MCP 模式 (推荐 - 适用于 AI 助手)
+在 Trae, Claude Desktop 等 AI 客户端中，配置连接类型为 `sse`，URL 为上面的 SSE 端点。
 
-## 核心功能
+**可用工具 (Tools):**
+- `trigger_build`: 触发新的小程序构建流程。
+- `get_build_status`: 检查当前是否正在构建。
+- `get_build_log`: 获取最新构建日志。
+- `get_last_build_info`: 获取上次成功构建的 Commit Hash。
+- `get_help`: 获取详细的中文帮助文档。
 
-### 1. 触发构建 (Build)
-- **方法**: `POST`
-- **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/build`
-- **描述**: 启动新的构建任务。
-- **关联场景**: 对应 `package.json` 中的 `ci:dev` 命令。
-- **命令**: `./qqc_miniprogram_tool.sh build`
+### 2. HTTP 模式 (适用于 curl/浏览器/脚本)
+- **触发构建**: `POST /build` 或 `GET /build`
+- **查看状态**: `GET /status`
+- **查看日志**: `GET /log`
+- **历史记录**: `GET /builds`
+- **获取帮助**: `GET /help`
 
-### 2. 获取状态 (Status)
-- **方法**: `GET`
-- **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/status`
-- **描述**: 返回当前是否正在执行构建。
-- **命令**: `./qqc_miniprogram_tool.sh status`
+### 3. 本地 CLI 工具 (qqc_miniprogram_tool.sh)
+如果你在打包机本地，可以使用该脚本：
+- `./qqc_miniprogram_tool.sh init <IP> <Port>`: 初始化配置。
+- `./qqc_miniprogram_tool.sh build`: 触发构建。
+- `./qqc_miniprogram_tool.sh log`: 查看日志。
 
-### 3. 获取日志 (Log)
-- **方法**: `GET`
-- **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/log`
-- **描述**: 获取最新构建日志。
-- **命令**: `./qqc_miniprogram_tool.sh log`
+---
 
-### 4. 上次构建信息 (Last Build)
-- **方法**: `GET`
-- **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/last-build`
-- **描述**: 获取最近一次成功构建的 Commit Hash。
-- **命令**: `./qqc_miniprogram_tool.sh last-build`
+## 🚀 第一次初始化流程
 
-### 5. 健康检查 (Health)
-- **方法**: `GET`
-- **路径**: `http://{{iMac_IP}}:{{iMac_Port}}/health`
-- **描述**: 检查服务存活状态。
-- **命令**: `./qqc_miniprogram_tool.sh health`
+1.  **确认 IP**: 询问用户打包机（iMac）的内网 IP。
+2.  **配置环境**: 在本地执行 `./qqc_miniprogram_tool.sh init <IP> <Port>`。
+3.  **连接验证**: 调用 `health` 或 `get_help` 确保连接通畅。
 
-## 💡 触发场景 (Trigger Scenarios)
+---
 
-AI 助手在接收到以下类似指令时，应主动调用此 Skill：
+## 💡 常用指令示例 (对 AI 说)
 
-- **发布相关**:
-  - “发布小程序测试环境”
-  - “发布小程序体验版”
-  - “更新体验版”
-  - “部署测试版”
-- **打包相关**:
-  - “帮我打包一下”
-  - “执行自动化构建”
-  - “触发远程打包”
-- **状态与排查**:
-  - “查看打包进度”
-  - “为什么发布失败了”
-  - “检查打包服务器状态”
+- “帮我发布一下小程序体验版”
+- “现在打包进度怎么样了？”
+- “查看一下最近一次成功的构建 hash”
+- “打包机现在在线吗？”
+- “显示打包服务的帮助文档”
 
-## 使用场景
+---
 
-- **初次触发**: “发布小程序体验版” -> AI: “好的，请告诉我打包机 iMac 的 IP 和端口。”
-- **后续任务**: AI 应优先读取同目录 `.env`，除非用户主动要求更改。
+## ⚠️ 注意事项
+- **飞书通知**: 构建结果会自动发送到配置的飞书群机器人。
+- **构建冲突**: 如果已有构建在进行中，新的触发请求将返回 409 错误。
+- **日志**: `/log` 仅返回当前或最近一次的详细日志；`/builds` 返回所有历史触发记录。
