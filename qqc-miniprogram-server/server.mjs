@@ -200,7 +200,10 @@ const buildHandler = async (req, res) => {
 app.get('/build', buildHandler)
 app.post('/build', buildHandler)
 app.get('/status', (req, res) => res.json({ isBuilding: state.isBuilding }))
-app.get('/log', (req, res) => res.send(state.log))
+app.get('/log', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+  res.send(state.log)
+})
 app.get(['/', '/health'], (req, res) => res.json({ status: 'ok', uptime: process.uptime() }))
 
 // --- 启动服务 ---
