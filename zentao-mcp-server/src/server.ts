@@ -121,6 +121,24 @@ async function readJsonBody(req: IncomingMessage): Promise<RequestBody> {
   return JSON.parse(raw) as RequestBody;
 }
 
+function parseQueryParams(url: URL): RequestBody {
+  const body: Record<string, any> = {};
+  url.searchParams.forEach((value, key) => {
+    if (key === "bugId") {
+      body[key] = /^\d+$/.test(value) ? Number(value) : value;
+    } else if (["includeMedia", "resetAll", "dryRun"].includes(key)) {
+      body[key] = value === "true" || value === "1";
+    } else if (["intervalMs"].includes(key)) {
+      body[key] = Number(value);
+    } else if (key === "mailto") {
+      body[key] = value.split(",").map((s) => s.trim()).filter(Boolean);
+    } else {
+      body[key] = value;
+    }
+  });
+  return body as RequestBody;
+}
+
 function loadWatchState(config: ServerConfig): WatchStateStore {
   try {
     if (!existsSync(config.stateFile)) return {};
@@ -380,12 +398,12 @@ export function startServer(options?: { silent?: boolean }): { listen(port: numb
         return;
       }
 
-      if (req.method !== "POST") {
-        fail(res, 405, "METHOD_NOT_ALLOWED", "only POST is supported");
+      if (req.method !== "POST" && req.method !== "GET") {
+        fail(res, 405, "METHOD_NOT_ALLOWED", "only GET and POST are supported");
         return;
       }
 
-      const body = await readJsonBody(req);
+      const body = req.method === "POST" ? await readJsonBody(req) : parseQueryParams(url);
       const result = await callTool(url.pathname, body, watchManager);
       ok(res, result);
     } catch (error) {
