@@ -6,7 +6,8 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { SpugClient } from "./spug-client.js";
-import type { AppSummary, DeployConfig, Environment, ReleaseRequest, VersionsPayload } from "./types.js";
+import { sendFeishuNotification } from "./notifier.js";
+import type { AppSummary, DeployConfig, Environment, ReleaseRequest, ReleaseStatus, VersionsPayload } from "./types.js";
 
 type Flags = Record<string, string[]>;
 
@@ -25,7 +26,19 @@ function loadEnv() {
 }
 
 function saveEnv(config: Record<string, string>) {
-  const lines = Object.entries(config).map(([key, value]) => `${key}=${value}`);
+  const currentEnv: Record<string, string> = {};
+  if (fs.existsSync(ENV_PATH)) {
+    const content = fs.readFileSync(ENV_PATH, "utf-8");
+    for (const line of content.split("\n")) {
+      const [key, ...valueParts] = line.split("=");
+      if (key && valueParts.length > 0) {
+        currentEnv[key.trim()] = valueParts.join("=").trim();
+      }
+    }
+  }
+
+  const merged = { ...currentEnv, ...config };
+  const lines = Object.entries(merged).map(([key, value]) => `${key}=${value}`);
   fs.writeFileSync(ENV_PATH, lines.join("\n") + "\n");
 }
 
@@ -45,6 +58,9 @@ async function main(): Promise<void> {
 
   const ip = optionalOne(flags, "ip") || process.env.SPUG_IP;
   const port = optionalOne(flags, "port") || process.env.SPUG_PORT;
+
+  const feishuWebhook = optionalOne(flags, "feishu-webhook") || process.env.FEISHU_WEBHOOK;
+  const feishuKeyword = optionalOne(flags, "feishu-keyword") || process.env.FEISHU_KEYWORD;
 
   if (!baseUrl && ip && port) {
     baseUrl = port === "443" ? `https://${ip}` : `http://${ip}:${port}`;
@@ -66,6 +82,8 @@ async function main(): Promise<void> {
   if (baseUrl) newConfig.SPUG_BASE_URL = baseUrl;
   if (ip) newConfig.SPUG_IP = ip;
   if (port) newConfig.SPUG_PORT = port;
+  if (feishuWebhook) newConfig.FEISHU_WEBHOOK = feishuWebhook;
+  if (feishuKeyword) newConfig.FEISHU_KEYWORD = feishuKeyword;
 
   saveEnv(newConfig);
 
@@ -120,6 +138,12 @@ async function main(): Promise<void> {
       return;
     }
     case "deploy-and-watch": {
+      const target = await client.resolveDeployTarget({
+        app: optionalOne(flags, "app"),
+        env: optionalOne(flags, "env"),
+        deployId: optionalNumber(flags, "deploy-id"),
+      });
+
       const request = await createRequestFromFlags(client, flags);
       const trigger = await client.triggerDeploy(request.id, optionalOne(flags, "mode") ?? "all");
       const pollSeconds = optionalNumber(flags, "poll-interval") ?? 5;
@@ -131,6 +155,18 @@ async function main(): Promise<void> {
         trigger,
         status,
       });
+
+      if (feishuWebhook) {
+        const title = `Spug 发布任务: ${request.name}`;
+        const content = [
+          `应用: ${target.app.name}`,
+          `环境: ${target.environment.name}`,
+          `状态: ${status.status_alias}`,
+          `发布单: ${request.name}`,
+          `控制台: ${baseUrl}`,
+        ].join("\n");
+        await sendFeishuNotification({ webhook: feishuWebhook, keyword: feishuKeyword }, title, content);
+      }
 
       if (!isSuccessStatus(status.status)) {
         process.exitCode = 1;
@@ -379,6 +415,8 @@ Configuration flags (stored in .env after first use):
   --port <port>         Spug server port (default 80, 443 uses https)
   --username <user>     Spug login username
   --password <password> Spug login password
+  --feishu-webhook <url> Feishu notification webhook URL
+  --feishu-keyword <text> Feishu notification security keyword
 
 Commands:
   login
