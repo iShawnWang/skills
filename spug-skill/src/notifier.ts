@@ -10,7 +10,7 @@ export async function sendFeishuNotification(config: FeishuConfig, title: string
   if (!config.webhook) return;
 
   // Feishu keyword must be present in the message to pass security check if configured.
-  const header = config.keyword ? `[${config.keyword}] ${title}` : title;
+  const header = config.keyword ? `${config.keyword} ${title}` : title;
 
   const body = {
     msg_type: "post",
