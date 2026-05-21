@@ -34,6 +34,7 @@ interface RequestBody {
 
 interface WatchState {
   snapshotBugIds: number[];
+  seenBugIds: number[];
   lastCheckedAt: string;
   assignee: string;
 }
@@ -147,6 +148,9 @@ function loadWatchState(config: ServerConfig): WatchStateStore {
     const parsed = JSON.parse(content) as WatchStateStore;
     for (const item of Object.values(parsed)) {
       item.lastCheckedAt = normalizeStoredDateTime(item.lastCheckedAt);
+      item.seenBugIds = Array.isArray(item.seenBugIds)
+        ? [...new Set(item.seenBugIds)]
+        : [...new Set(item.snapshotBugIds ?? [])];
     }
     return parsed;
   } catch (error) {
@@ -202,6 +206,7 @@ class WatchManager {
         assignee,
         intervalMs: item.intervalMs,
         snapshotBugIds: this.state[assignee]?.snapshotBugIds ?? [],
+        seenBugIds: this.state[assignee]?.seenBugIds ?? [],
         lastCheckedAt: this.state[assignee]?.lastCheckedAt ?? null,
         running: true,
       })),
@@ -212,12 +217,15 @@ class WatchManager {
     const client = new ZentaoClient(loadConfig());
     const result = await listMyBugs(client);
     const currentIds = result.bugs.map((bug) => bug.id);
-    const previousIds = new Set(this.state[assignee]?.snapshotBugIds ?? []);
-    const newBugs = result.bugs.filter((bug) => !previousIds.has(bug.id));
+    const previousState = this.state[assignee];
+    const seenIds = new Set(previousState?.seenBugIds ?? previousState?.snapshotBugIds ?? []);
+    const newBugs = result.bugs.filter((bug) => !seenIds.has(bug.id));
     await notifyFeishu(this.config.feishuWebhookUrl, this.config.feishuKeywordPrefix, newBugs, assignee);
+    const nextSeenIds = [...new Set([...seenIds, ...currentIds])].sort((a, b) => a - b);
     this.state[assignee] = {
       assignee,
       snapshotBugIds: currentIds,
+      seenBugIds: nextSeenIds,
       lastCheckedAt: formatLocalDateTime(),
     };
     saveWatchState(this.config, this.state);
@@ -233,12 +241,14 @@ class WatchManager {
   async start(assignee: string, intervalMs: number): Promise<Record<string, unknown>> {
     if (!this.config.feishuWebhookUrl) throw new Error("FEISHU_WEBHOOK_URL is required before starting watcher");
     await this.stop(assignee);
-    if (!this.state[assignee]) {
+    const existingState = this.state[assignee];
+    if (!existingState || (existingState.snapshotBugIds.length === 0 && existingState.seenBugIds.length === 0)) {
       const client = new ZentaoClient(loadConfig());
       const initial = await listMyBugs(client);
       this.state[assignee] = {
         assignee,
         snapshotBugIds: initial.bugs.map((bug) => bug.id),
+        seenBugIds: initial.bugs.map((bug) => bug.id),
         lastCheckedAt: formatLocalDateTime(),
       };
       saveWatchState(this.config, this.state);
@@ -250,6 +260,7 @@ class WatchManager {
         this.state[assignee] = {
           assignee,
           snapshotBugIds: previous?.snapshotBugIds ?? [],
+          seenBugIds: previous?.seenBugIds ?? previous?.snapshotBugIds ?? [],
           lastCheckedAt: formatLocalDateTime(),
         };
         saveWatchState(this.config, this.state);
@@ -262,6 +273,7 @@ class WatchManager {
       assignee,
       intervalMs,
       snapshotBugIds: this.state[assignee].snapshotBugIds,
+      seenBugIds: this.state[assignee].seenBugIds,
       lastCheckedAt: this.state[assignee].lastCheckedAt,
       message: "watcher 已启动；首次启动仅建立快照，不通知历史 bug",
     };
@@ -366,6 +378,7 @@ async function callTool(pathname: string, body: RequestBody, watchManager: Watch
       return watchManager.stop(String(body.assignee ?? ""));
     case "/watch/status":
       return watchManager.status();
+    case "/watch/check_now":
     case "/watch/run":
       return watchManager.run(String(body.assignee ?? ""));
     case "/watch/reset":

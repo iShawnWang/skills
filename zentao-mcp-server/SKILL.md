@@ -103,19 +103,21 @@ POST /diagnose
 - `POST /watch/start`
 - `POST /watch/stop`
 - `POST /watch/status`
-- `POST /watch/check_now`
+- `POST /watch/run`（兼容别名：`POST /watch/check_now`）
 - `POST /watch/reset`
 
-比较策略使用“当前快照集”模式：
+比较策略使用“已见过 Bug ID 集合”模式：
 
-- 当前轮询的 bug id 集合减去上一轮快照集合，得到新增 bug
+- 当前轮询的 bug id 集合减去历史已见过集合，得到新增 bug
 - 新增 bug 发送飞书通知
-- 然后用当前集合覆盖快照
+- 然后用当前集合覆盖快照，并把当前集合合并进历史已见过集合
+
+这样即使某一轮因为禅道页面临时为空、会话波动或夜间维护导致当前列表解析为 0，也不会在下一轮恢复时把历史 Bug 当成全量新增再次推送。
 
 首次启动 watcher 只建立快照，不通知历史 bug。
 启动 watcher 前需要在 `.env` 中配置 `FEISHU_WEBHOOK_URL`。
 watcher 的唯一标识直接使用 `assignee`，不再单独传 `watchKey`。
-如果需要立刻拉取一次并做 diff，而不是等待下一个轮询周期，调用 `POST /watch/check_now`，Body 传 `assignee`。
+如果需要立刻拉取一次并做 diff，而不是等待下一个轮询周期，调用 `POST /watch/run` 或 `POST /watch/check_now`，Body 传 `assignee`。
 
 ## 使用原则
 
