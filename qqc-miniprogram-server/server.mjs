@@ -40,6 +40,7 @@ const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
 | **/log** | GET | 获取当前或最近一次构建的实时详细日志 |
 | **/last-build** | GET | 获取上次成功构建的 Commit Hash 和时间 |
 | **/builds** | GET | 获取所有历史构建触发记录 (IP、时间、Commit) |
+| **/menu-query** | GET | 查询平台端管理后台路由对应的源码文件 |
 | **/health** | GET | 服务健康检查 |
 
 ---
@@ -93,6 +94,20 @@ const listToolsHandler = async () => {
         description: "检查服务的运行健康状态及运行时间。",
         inputSchema: { type: "object", properties: {} },
       },
+      {
+        name: "query_admin_menu",
+        description: "查询平台端 web 管理后台路由对应的源码文件信息。支持输入完整 URL、路径或菜单 ID。",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "查询内容，可以是完整 URL (如 http://.../vhtml/5001)、路径 (如 vhtml/5001) 或 菜单ID (如 5001)",
+            },
+          },
+          required: ["query"],
+        },
+      },
     ],
   };
 };
@@ -123,6 +138,44 @@ const callToolHandler = async (request) => {
       return { content: [{ type: "text", text: HELP_TEXT }] };
     case "health_check":
       return { content: [{ type: "text", text: JSON.stringify({ status: 'ok', uptime: process.uptime() }, null, 2) }] };
+    case "query_admin_menu": {
+      const { query } = request.params.arguments;
+      if (!query) {
+        return { content: [{ type: "text", text: "Please provide a query string (URL, path, or ID)." }], isError: true };
+      }
+
+      // 提取 ID
+      let targetId = query.trim();
+      if (targetId.includes('/')) {
+        const parts = targetId.split('/');
+        targetId = parts[parts.length - 1];
+      }
+
+      try {
+        const response = await fetch('https://apideve.yeqiao.cn/dev-api/admin/MenuAd/getSysMenuTree');
+        const data = await response.json();
+
+        const findMenu = (nodes, id) => {
+          for (const node of nodes) {
+            if (node.path === id || String(node.id) === id) return node;
+            if (node.children && node.children.length > 0) {
+              const found = findMenu(node.children, id);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        const result = findMenu(data, targetId);
+        if (result) {
+          return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        } else {
+          return { content: [{ type: "text", text: `No menu item found for: ${query}` }] };
+        }
+      } catch (error) {
+        return { content: [{ type: "text", text: `Error fetching menu tree: ${error.message}` }], isError: true };
+      }
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -232,6 +285,46 @@ app.get('/log', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
   res.send(state.log)
 })
+
+app.get('/menu-query', async (req, res) => {
+  const query = req.query.query;
+  if (!query) {
+    return res.status(400).json({ error: "Please provide a query string (URL, path, or ID)." });
+  }
+
+  // 提取 ID
+  let targetId = query.trim();
+  if (targetId.includes('/')) {
+    const parts = targetId.split('/');
+    targetId = parts[parts.length - 1];
+  }
+
+  try {
+    const response = await fetch('https://apideve.yeqiao.cn/dev-api/admin/MenuAd/getSysMenuTree');
+    const data = await response.json();
+
+    const findMenu = (nodes, id) => {
+      for (const node of nodes) {
+        if (node.path === id || String(node.id) === id) return node;
+        if (node.children && node.children.length > 0) {
+          const found = findMenu(node.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const result = findMenu(data, targetId);
+    if (result) {
+      res.json(result);
+    } else {
+      res.status(404).json({ error: `No menu item found for: ${query}` });
+    }
+  } catch (error) {
+    res.status(500).json({ error: `Error fetching menu tree: ${error.message}` });
+  }
+})
+
 app.get(['/', '/health'], (req, res) => res.json({ status: 'ok', uptime: process.uptime() }))
 
 // --- 启动服务 ---
