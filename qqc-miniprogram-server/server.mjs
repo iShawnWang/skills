@@ -135,7 +135,15 @@ mcpServer.setRequestHandler(CallToolRequestSchema, callToolHandler);
 // --- HTTP & SSE Setup ---
 
 const app = express()
-app.use(express.json())
+
+// 针对 /messages 路径不使用 express.json()，避免 SSE 消息流被截断
+app.use((req, res, next) => {
+  if (req.path === '/messages') {
+    next()
+  } else {
+    express.json()(req, res, next)
+  }
+})
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces()
@@ -148,18 +156,31 @@ function getLocalIP() {
 }
 
 // 1. 标准 MCP SSE 连接端点
-let sseTransport = null;
+const sseTransports = new Map();
+
 app.get("/sse", async (req, res) => {
   console.log("New standard SSE connection established");
-  sseTransport = new SSEServerTransport("/messages", res);
-  await mcpServer.connect(sseTransport);
+  const transport = new SSEServerTransport("/messages", res);
+  const sessionId = transport.sessionId;
+  sseTransports.set(sessionId, transport);
+
+  await mcpServer.connect(transport);
+
+  res.on("close", () => {
+    console.log(`SSE connection closed: ${sessionId}`);
+    sseTransports.delete(sessionId);
+  });
 });
 
 app.post("/messages", async (req, res) => {
-  if (sseTransport) {
-    await sseTransport.handlePostMessage(req, res);
+  const sessionId = req.query.sessionId;
+  const transport = sseTransports.get(sessionId);
+
+  if (transport) {
+    await transport.handlePostMessage(req, res);
   } else {
-    res.status(400).send("No active SSE transport");
+    // 兼容旧版或没有 sessionId 的情况（如果有全局变量的话）
+    res.status(400).send("No active SSE transport for this session");
   }
 });
 
