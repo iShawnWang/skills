@@ -31,7 +31,7 @@
 
 ```bash
 # 进入项目目录
-cd gitlab-weekly-report
+cd weekly-summary
 
 # 安装依赖
 npm install
@@ -95,7 +95,7 @@ GITLAB_USERNAME=your.username
 
 ## 项目结构
 ```
-gitlab-weekly-report/
+weekly-summary/
 ├── scripts/
 │   ├── cli.ts                # CLI 入口
 │   ├── gitlab-client.ts       # GitLab API 封装

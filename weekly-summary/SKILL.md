@@ -1,5 +1,5 @@
 ---
-name: gitlab-weekly-report
+name: weekly-summary
 description: 统计个人 GitLab 提交记录并生成周报。通过分析特定时间段内的 Commits 和代码变更（Diff），按项目和分支自动分类并生成美观的 Markdown 报告。适合用于周报撰写、会议汇报或个人工作回顾。
 compatibility: Node.js 18+, TypeScript
 ---

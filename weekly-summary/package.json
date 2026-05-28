@@ -1,5 +1,5 @@
 {
-  "name": "gitlab-weekly-report",
+  "name": "weekly-summary",
   "version": "1.0.0",
   "description": "Generate GitLab weekly activity reports with code change analysis",
   "main": "scripts/cli.ts",
