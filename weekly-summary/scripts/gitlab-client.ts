@@ -86,22 +86,29 @@ export class GitLabClient {
       );
 
       // Fetch refs for each commit to know which branch it belongs to
-      const commitsWithRefs = await Promise.all(
-        response.data.map(async (commit) => {
-          try {
-            const refsResponse = await this.client.get(
-              `/api/v4/projects/${projectId}/repository/commits/${commit.id}/refs`,
-              { params: { type: 'branch' } }
-            );
-            return {
-              ...commit,
-              refs: refsResponse.data.map((r: any) => r.name)
-            };
-          } catch (e) {
-            return commit;
-          }
-        })
-      );
+      // Use chunked requests to avoid MaxListenersExceededWarning and server overload
+      const commitsWithRefs: (Commit & { refs?: string[] })[] = [];
+      const chunkSize = 10;
+      for (let i = 0; i < response.data.length; i += chunkSize) {
+        const chunk = response.data.slice(i, i + chunkSize);
+        const chunkResults = await Promise.all(
+          chunk.map(async (commit) => {
+            try {
+              const refsResponse = await this.client.get(
+                `/api/v4/projects/${projectId}/repository/commits/${commit.id}/refs`,
+                { params: { type: 'branch' } }
+              );
+              return {
+                ...commit,
+                refs: refsResponse.data.map((r: any) => r.name)
+              };
+            } catch (e) {
+              return commit;
+            }
+          })
+        );
+        commitsWithRefs.push(...chunkResults);
+      }
 
       return commitsWithRefs;
     } catch (error) {

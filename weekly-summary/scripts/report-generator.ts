@@ -127,13 +127,21 @@ export class WeeklyReportGenerator {
           const branchMap = new Map<string, Map<string, { commits: Activity[], additions: number, deletions: number }>>();
 
           // Limit diff fetching
-          const commitsToFetchStats = filteredCommits.slice(0, 20);
-          const enrichedCommits = await Promise.all(
-            commitsToFetchStats.map(async (commit) => {
-              const stats = await this.client.getCommitDiff(project.id, commit.id);
-              return { ...commit, stats };
-            })
-          );
+           const commitsToFetchStats = filteredCommits.slice(0, 20);
+           const enrichedCommits: any[] = [];
+
+           // Use chunked requests to avoid MaxListenersExceededWarning
+           const diffChunkSize = 5;
+           for (let i = 0; i < commitsToFetchStats.length; i += diffChunkSize) {
+             const chunk = commitsToFetchStats.slice(i, i + diffChunkSize);
+             const chunkResults = await Promise.all(
+               chunk.map(async (commit) => {
+                 const stats = await this.client.getCommitDiff(project.id, commit.id);
+                 return { ...commit, stats };
+               })
+             );
+             enrichedCommits.push(...chunkResults);
+           }
 
           let projectAdditions = 0;
           let projectDeletions = 0;

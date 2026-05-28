@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "ts-node scripts/cli.ts",
     "build": "tsc",
-    "start": "node dist/cli.js"
+    "bundle": "ncc build scripts/cli.ts -o dist --minify --no-cache",
+    "start": "node dist/index.js"
+  },
+  "bin": {
+    "weekly-report": "dist/index.js"
   },
   "keywords": [
     "gitlab",
@@ -17,13 +21,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@types/node": "^20.10.0",
     "axios": "^1.6.2",
     "commander": "^12.0.0",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2"
+    "@types/node": "^20.10.0",
+    "@vercel/ncc": "^0.38.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { EventEmitter } from 'events';
 import { getEnvPath, initSkillConfig, loadSkillEnv } from './config';
 import { WeeklyReportGenerator } from './report-generator';
+
+// Increase default max listeners to avoid warnings during concurrent requests
+EventEmitter.defaultMaxListeners = 100;
 
 loadSkillEnv();
 
 function initCommand(args: string[]): void {
   const program = new Command();
   program
-    .name('gitlab-weekly-report init')
+    .name('node dist/index.js init')
     .requiredOption('--gitlab-token <token>', 'GitLab personal access token')
     .option('--gitlab-url <url>', 'GitLab instance URL (default: https://gitlab.com)')
     .option('--username <name>', 'GitLab username');
 
-  program.parse(['node', 'gitlab-weekly-report init', ...args]);
+  program.parse(['node', 'dist/index.js init', ...args]);
   const options = program.opts();
 
   initSkillConfig({
@@ -36,7 +40,7 @@ async function main() {
   const program = new Command();
 
   program
-    .name('gitlab-weekly-report')
+    .name('node dist/index.js')
     .description('GitLab Weekly Report Generator')
     .version('1.0.0')
     .option('--start-date <date>', 'Start date (ISO format: YYYY-MM-DD)')
@@ -53,20 +57,20 @@ Environment Variables:
 
 Examples:
   # Generate last week's report
-  GITLAB_ACCESS_TOKEN=glpat-xxx npx ts-node scripts/cli.ts
+  GITLAB_ACCESS_TOKEN=glpat-xxx node dist/index.js
 
   # Custom date range
-  GITLAB_ACCESS_TOKEN=glpat-xxx npx ts-node scripts/cli.ts \
+  GITLAB_ACCESS_TOKEN=glpat-xxx node dist/index.js \
     --start-date "2024-01-08" \
     --end-date "2024-01-14"
 
   # Specific user and instance
-  GITLAB_ACCESS_TOKEN=glpat-xxx npx ts-node scripts/cli.ts \
+  GITLAB_ACCESS_TOKEN=glpat-xxx node dist/index.js \
     --gitlab-url "https://gitlab.company.com" \
     --username "john.doe"
 
   # Save to file
-  GITLAB_ACCESS_TOKEN=glpat-xxx npx ts-node scripts/cli.ts > weekly-report.md
+  GITLAB_ACCESS_TOKEN=glpat-xxx node dist/index.js > weekly-report.md
 `);
 
   program.parse(process.argv);

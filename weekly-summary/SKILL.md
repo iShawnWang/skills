@@ -20,42 +20,41 @@ compatibility: Node.js 18+, TypeScript
 
 ### 前置条件
 
-1. 安装 Node.js 18+ 和 npm/pnpm。
+1. 安装 Node.js 18+。
 2. 准备 GitLab API Token（权限需包含：`api`, `read_api`, `read_repository`）。
 
 ### 安装与运行
 
+本项目已打包为单文件 JS，**拉下代码后即可直接运行，无需执行 `npm install`**。
+
 ```bash
-# 1. 安装依赖
-npm install
+# 1. 初始化当前 Skill 目录下的 .env
+node dist/index.js init --gitlab-token "你的Token" --gitlab-url "http://your-gitlab-url/" --username "你的用户名"
 
-# 2. 初始化当前 Skill 目录下的 .env
-npx ts-node scripts/cli.ts init --gitlab-token "你的Token" --gitlab-url "http://your-gitlab-url/" --username "你的用户名"
-
-# 3. 运行工具并保存结果
-npx ts-node scripts/cli.ts > weekly-summary.md
+# 2. 运行工具并保存结果
+node dist/index.js > weekly-summary.md
 ```
 
 ## 使用示例
 
 ### 初始化配置
 ```bash
-npx ts-node scripts/cli.ts init --gitlab-token "glpat-xxx"
+node dist/index.js init --gitlab-token "glpat-xxx"
 ```
 
 ### 生成上周报告 (默认)
 ```bash
-npx ts-node scripts/cli.ts
+node dist/index.js
 ```
 
 ### 指定日期范围
 ```bash
-npx ts-node scripts/cli.ts --start-date "2024-04-01" --end-date "2024-04-07"
+node dist/index.js --start-date "2024-04-01" --end-date "2024-04-07"
 ```
 
 ### 使用自托管实例并保存到文件
 ```bash
-npx ts-node scripts/cli.ts --gitlab-url "http://172.17.188.125:9001/" > weekly-summary.md
+node dist/index.js --gitlab-url "http://172.17.188.125:9001/" > weekly-summary.md
 ```
 
 ## 配置说明
@@ -108,4 +107,4 @@ Skill 会固定读取自己安装目录下的 `.env`，不依赖当前 shell 工
 
 ---
 
-**需要帮助？** 请运行：`npx ts-node scripts/cli.ts --help`
+**需要帮助？** 请运行：`node dist/index.js --help`
