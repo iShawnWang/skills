@@ -66,11 +66,11 @@ node server.mjs
 
 | 工具名称 | 描述 |
 | :--- | :--- |
-| `trigger_build` | 触发新的小程序构建流程 |
-| `get_build_status` | 检查当前是否正在构建 |
-| `get_build_log` | 获取当前或最近一次构建的实时日志 |
-| `get_last_build_info` | 获取上次成功构建的 Commit Hash 和时间 |
-| `get_help` | 获取详细的中文帮助文档 |
+| `trigger_build` | 触发新的构建。AI 需每隔 20s 轮询 `get_build_status` 直到结束。 |
+| `get_build_status` | 检查构建状态 (isBuilding: true/false) |
+| `get_build_log` | 获取实时详细构建日志 |
+| `get_last_build_info` | 获取上次成功构建的 Hash 和时间 |
+| `get_help` | 获取详细中文帮助文档 |
 | `health_check` | 服务健康检查 |
 
 ---

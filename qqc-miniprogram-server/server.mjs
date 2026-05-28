@@ -65,32 +65,32 @@ const listToolsHandler = async () => {
     tools: [
       {
         name: "trigger_build",
-        description: "Trigger a new mini-program build process",
+        description: "触发新的小程序构建流程。注意：此工具是异步的，调用成功后，请你（AI）务必每隔 20 秒通过 get_build_status 轮询构建状态，直到构建完成（isBuilding 变为 false），最后将结果告知用户。",
         inputSchema: { type: "object", properties: {} },
       },
       {
         name: "get_build_status",
-        description: "Check if a build is currently in progress",
+        description: "检查当前是否正在构建。如果 isBuilding 为 true，表示正在构建中；为 false 表示构建已结束或未开始。",
         inputSchema: { type: "object", properties: {} },
       },
       {
         name: "get_build_log",
-        description: "Get the latest logs from the current or most recent build",
+        description: "获取当前或最近一次构建的实时详细日志内容。",
         inputSchema: { type: "object", properties: {} },
       },
       {
         name: "get_last_build_info",
-        description: "Get information about the last successful build",
+        description: "获取上次成功构建的详细信息，包括 Commit Hash 和完成时间。",
         inputSchema: { type: "object", properties: {} },
       },
       {
         name: "get_help",
-        description: "Get the human-readable help documentation",
+        description: "获取服务的详细中文帮助文档，包含接口说明和使用指南。",
         inputSchema: { type: "object", properties: {} },
       },
       {
         name: "health_check",
-        description: "Check the health of the server",
+        description: "检查服务的运行健康状态及运行时间。",
         inputSchema: { type: "object", properties: {} },
       },
     ],
@@ -111,7 +111,7 @@ const callToolHandler = async (request) => {
       try { commitHash = await getLatestCommitHash() } catch (e) {}
       fs.appendFileSync(LOG_FILE, `[${time}] MCP Trigger, Commit: ${commitHash}\n`)
       triggerBuild()
-      return { content: [{ type: "text", text: `Build started. Commit: ${commitHash}` }] };
+      return { content: [{ type: "text", text: `Build started. Commit: ${commitHash}\n\n[AI 提示]: 构建已在后台启动。请你现在开始每隔 20 秒调用一次 get_build_status 检查状态，并在构建完成后（isBuilding 变为 false）告知用户结果。你可以通过 get_build_log 获取实时进度。` }] };
     }
     case "get_build_status":
       return { content: [{ type: "text", text: JSON.stringify({ isBuilding: state.isBuilding }, null, 2) }] };
