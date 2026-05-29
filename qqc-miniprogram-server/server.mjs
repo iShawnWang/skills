@@ -13,6 +13,7 @@ import { triggerBuild, getLatestCommitHash, sendFeishuNotification } from './bui
 
 const LOG_FILE = path.join(process.cwd(), 'builds.log')
 const PORT = 3000
+const SESSION_TIMEOUT = 60 * 60 * 1000 // 1 hour timeout
 
 const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
 
@@ -46,19 +47,7 @@ const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
 ---
 *注：构建启动、成功或失败时，系统会自动发送实时通知至飞书群。*`
 
-// --- MCP Server Setup ---
-
-const mcpServer = new Server(
-  {
-    name: "qqc-miniprogram-server",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
+// --- MCP Handler Functions ---
 
 // 工具列表处理器
 const listToolsHandler = async () => {
@@ -181,9 +170,23 @@ const callToolHandler = async (request) => {
   }
 };
 
-// 注册处理器
-mcpServer.setRequestHandler(ListToolsRequestSchema, listToolsHandler);
-mcpServer.setRequestHandler(CallToolRequestSchema, callToolHandler);
+// Helper to create a new MCP Server instance
+function createMcpServer() {
+  const server = new Server(
+    {
+      name: "qqc-miniprogram-server",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {
+        tools: {},
+      },
+    }
+  );
+  server.setRequestHandler(ListToolsRequestSchema, listToolsHandler);
+  server.setRequestHandler(CallToolRequestSchema, callToolHandler);
+  return server;
+}
 
 // --- HTTP & SSE Setup ---
 
@@ -209,33 +212,60 @@ function getLocalIP() {
 }
 
 // 1. 标准 MCP SSE 连接端点
-const sseTransports = new Map();
+const sseSessions = new Map(); // stores { transport, server, lastActive }
 
 app.get("/sse", async (req, res) => {
   console.log("New standard SSE connection established");
   const transport = new SSEServerTransport("/messages", res);
   const sessionId = transport.sessionId;
-  sseTransports.set(sessionId, transport);
+  const server = createMcpServer();
 
-  await mcpServer.connect(transport);
+  sseSessions.set(sessionId, {
+    transport,
+    server,
+    lastActive: Date.now()
+  });
 
-  res.on("close", () => {
+  await server.connect(transport);
+
+  res.on("close", async () => {
     console.log(`SSE connection closed: ${sessionId}`);
-    sseTransports.delete(sessionId);
+    try {
+      await server.close();
+    } catch (e) {
+      console.error("Error closing server:", e);
+    }
+    sseSessions.delete(sessionId);
   });
 });
 
 app.post("/messages", async (req, res) => {
   const sessionId = req.query.sessionId;
-  const transport = sseTransports.get(sessionId);
+  const session = sseSessions.get(sessionId);
 
-  if (transport) {
-    await transport.handlePostMessage(req, res);
+  if (session) {
+    session.lastActive = Date.now(); // Update activity timestamp
+    await session.transport.handlePostMessage(req, res);
   } else {
-    // 兼容旧版或没有 sessionId 的情况（如果有全局变量的话）
     res.status(400).send("No active SSE transport for this session");
   }
 });
+
+// 定时清理过期会话 (每 5 分钟检查一次)
+setInterval(async () => {
+  const now = Date.now();
+  for (const [sessionId, session] of sseSessions.entries()) {
+    if (now - session.lastActive > SESSION_TIMEOUT) {
+      console.log(`Expiring idle SSE session: ${sessionId}`);
+      try {
+        await session.server.close();
+      } catch (e) {
+        console.error(`Error closing expired server ${sessionId}:`, e);
+      }
+      sseSessions.delete(sessionId);
+    }
+  }
+}, 5 * 60 * 1000);
 
 // 2. Opencode 兼容端点 (Streamable HTTP 模拟)
 app.post("/mcp", async (req, res) => {
