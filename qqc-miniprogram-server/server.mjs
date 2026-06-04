@@ -47,6 +47,43 @@ const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
 ---
 *注：构建启动、成功或失败时，系统会自动发送实时通知至飞书群。*`
 
+// --- Helpers ---
+
+/**
+ * 获取菜单树数据，包含超时和日志
+ */
+async function fetchMenuTree(timeoutMs = 8000) {
+  const url = 'https://apideve.yeqiao.cn/dev-api/admin/MenuAd/getSysMenuTree';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  console.log(`[${new Date().toLocaleString()}] 正在从 ${url} 获取菜单树...`);
+  const start = Date.now();
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP 错误! 状态码: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const duration = Date.now() - start;
+    console.log(`[${new Date().toLocaleString()}] 菜单树获取成功 (耗时 ${duration}ms)`);
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    const duration = Date.now() - start;
+    if (error.name === 'AbortError') {
+      console.error(`[${new Date().toLocaleString()}] 获取菜单树超时，已达到限制时间 ${timeoutMs}ms`);
+      throw new Error(`请求超时，耗时超过 ${timeoutMs}ms`);
+    }
+    console.error(`[${new Date().toLocaleString()}] 获取菜单树出错 (耗时 ${duration}ms): ${error.message}`);
+    throw error;
+  }
+}
+
 // --- MCP Handler Functions ---
 
 // 工具列表处理器
@@ -85,13 +122,13 @@ const listToolsHandler = async () => {
       },
       {
         name: "query_admin_menu",
-        description: "查询平台端 web 管理后台路由对应的源码文件信息。支持输入完整 URL、路径或菜单 ID。",
+        description: "查询平台端 web 管理后台路由对应的源码文件信息。支持输入完整 URL、路径、菜单 ID 或组件文件名(如 RescueOrder)。",
         inputSchema: {
           type: "object",
           properties: {
             query: {
               type: "string",
-              description: "查询内容，可以是完整 URL (如 http://.../vhtml/5001)、路径 (如 vhtml/5001) 或 菜单ID (如 5001)",
+              description: "查询内容，可以是完整 URL、路径、菜单ID 或组件文件名 (如 RescueOrder)",
             },
           },
           required: ["query"],
@@ -141,12 +178,17 @@ const callToolHandler = async (request) => {
       }
 
       try {
-        const response = await fetch('https://apideve.yeqiao.cn/dev-api/admin/MenuAd/getSysMenuTree');
-        const data = await response.json();
+        const data = await fetchMenuTree();
 
         const findMenu = (nodes, id) => {
           for (const node of nodes) {
-            if (node.path === id || String(node.id) === id) return node;
+            // 匹配 路径、ID、文件名(component) 或 名称(name)
+            if (
+              node.path === id ||
+              String(node.id) === id ||
+              (node.component && (node.component === id || node.component.endsWith('/' + id))) ||
+              node.name === id
+            ) return node;
             if (node.children && node.children.length > 0) {
               const found = findMenu(node.children, id);
               if (found) return found;
@@ -330,12 +372,17 @@ app.get('/menu-query', async (req, res) => {
   }
 
   try {
-    const response = await fetch('https://apideve.yeqiao.cn/dev-api/admin/MenuAd/getSysMenuTree');
-    const data = await response.json();
+    const data = await fetchMenuTree();
 
     const findMenu = (nodes, id) => {
       for (const node of nodes) {
-        if (node.path === id || String(node.id) === id) return node;
+        // 匹配 路径、ID、文件名(component) 或 名称(name)
+        if (
+          node.path === id ||
+          String(node.id) === id ||
+          (node.component && (node.component === id || node.component.endsWith('/' + id))) ||
+          node.name === id
+        ) return node;
         if (node.children && node.children.length > 0) {
           const found = findMenu(node.children, id);
           if (found) return found;
