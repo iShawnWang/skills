@@ -182,11 +182,12 @@ const callToolHandler = async (request) => {
 
         const findMenu = (nodes, id) => {
           for (const node of nodes) {
-            // 匹配 路径、ID、文件名(component) 或 名称(name)
+            // 匹配 路径、ID、文件名(component/description) 或 名称(name)
             if (
               node.path === id ||
               String(node.id) === id ||
               (node.component && (node.component === id || node.component.endsWith('/' + id))) ||
+              (node.description && (node.description === id || node.description.endsWith('/' + id))) ||
               node.name === id
             ) return node;
             if (node.children && node.children.length > 0) {
@@ -376,11 +377,12 @@ app.get('/menu-query', async (req, res) => {
 
     const findMenu = (nodes, id) => {
       for (const node of nodes) {
-        // 匹配 路径、ID、文件名(component) 或 名称(name)
+        // 匹配 路径、ID、文件名(component/description) 或 名称(name)
         if (
           node.path === id ||
           String(node.id) === id ||
           (node.component && (node.component === id || node.component.endsWith('/' + id))) ||
+          (node.description && (node.description === id || node.description.endsWith('/' + id))) ||
           node.name === id
         ) return node;
         if (node.children && node.children.length > 0) {
