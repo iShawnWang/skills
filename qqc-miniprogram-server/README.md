@@ -1,11 +1,10 @@
 # QQC 小程序自动化构建服务 (qqc-miniprogram-server)
 
-这是一个基于 Node.js 的轻量级自动化构建服务，已升级为 **MCP (Model Context Protocol)** 标准服务器。它支持通过 **MCP SSE**、**Streamable HTTP (Opencode 兼容)** 以及 **传统 HTTP API** 三种方式触发小程序构建与发布流程。
+这是一个基于 Node.js 的轻量级自动化构建服务，已升级为 **MCP (Model Context Protocol)** 标准服务器。它支持通过 **MCP SSE** 以及 **传统 HTTP API** 两种方式触发小程序构建与发布流程。
 
 ## 核心功能
 
 - **MCP 支持**: 提供标准 MCP 工具接口，适配 Trae、Claude Desktop 等 AI 客户端。
-- **兼容模式**: 专门为 Opencode 等工具提供 Streamable HTTP (`/mcp`) 接口。
 - **触发构建**: 接收指令后自动执行小程序构建与发布。
 - **状态监控**: 实时查看构建进度、上次构建 Hash 以及历史记录。
 - **飞书通知**: 构建全过程（启动、成功、失败）自动推送至飞书群。
@@ -19,12 +18,7 @@
 - **URL**: `http://<服务器IP>:3000/sse`
 - **传输方式**: SSE (Server-Sent Events)
 
-### 2. Opencode 兼容模式 (Streamable HTTP)
-适用于 Opencode 等需要单接口 POST 调用的工具。
-- **URL**: `http://<服务器IP>:3000/mcp`
-- **方法**: `POST`
-
-### 3. 传统 HTTP API 模式
+### 2. 传统 HTTP API 模式
 适用于浏览器、curl 或简单脚本。
 
 | 接口 | 方法 | 说明 |
@@ -76,6 +70,6 @@ node server.mjs
 ---
 
 ## 📁 项目结构
-- [server.mjs](file:///Users/qckj/skills/qqc-miniprogram-server/server.mjs): 服务入口，集成 MCP (SSE/Streamable) 与 HTTP 路由。
+- [server.mjs](file:///Users/qckj/skills/qqc-miniprogram-server/server.mjs): 服务入口，集成 MCP (SSE) 与 HTTP 路由。
 - [build.mjs](file:///Users/qckj/skills/qqc-miniprogram-server/build.mjs): 构建逻辑，负责执行 Shell 命令与飞书通知。
 - [state.mjs](file:///Users/qckj/skills/qqc-miniprogram-server/state.mjs): 内存状态管理，保存构建日志与进度。

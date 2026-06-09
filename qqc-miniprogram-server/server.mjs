@@ -26,11 +26,6 @@ const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
    - **传输协议**: SSE (Server-Sent Events)
    - **适用**: Trae, Claude Desktop, Cursor 等 AI 客户端。
 
-2. **Streamable HTTP 模式 (Opencode 兼容)**:
-   - **URL**: http://<服务器IP>:3000/mcp
-   - **方法**: POST
-   - **适用**: Opencode 等需要单接口 POST 调用的工具。
-
 ## 🌐 HTTP API 接口 (传统模式)
 
 | 接口 | 方法 | 说明 |
@@ -311,27 +306,6 @@ setInterval(async () => {
   }
 }, 5 * 60 * 1000);
 
-// 2. Opencode 兼容端点 (Streamable HTTP 模拟)
-app.post("/mcp", async (req, res) => {
-  const request = req.body;
-
-  try {
-    if (request.method === "tools/list") {
-      const result = await listToolsHandler();
-      return res.json({ jsonrpc: "2.0", id: request.id, result });
-    }
-
-    if (request.method === "tools/call") {
-      const result = await callToolHandler(request);
-      return res.json({ jsonrpc: "2.0", id: request.id, result });
-    }
-
-    res.status(400).json({ jsonrpc: "2.0", id: request.id, error: { code: -32601, message: "Method not found" } });
-  } catch (error) {
-    res.status(500).json({ jsonrpc: "2.0", id: request.id, error: { code: -32603, message: error.message } });
-  }
-});
-
 // --- 原有 HTTP API 接口 ---
 
 app.get('/help', (req, res) => {
@@ -414,7 +388,6 @@ app.listen(PORT, () => {
   const ip = getLocalIP()
   console.log(`Server is running on http://localhost:${PORT}`)
   console.log(`Standard SSE: http://localhost:${PORT}/sse`)
-  console.log(`Opencode Remote: http://localhost:${PORT}/mcp`)
 
-  sendFeishuNotification(`${process.env.NOTIFICATION_KEYWORD || '[YQ]'} 构建服务已启动 (兼容模式)\n地址: http://${ip}:${PORT}`)
+  sendFeishuNotification(`${process.env.NOTIFICATION_KEYWORD || '[YQ]'} 构建服务已启动\n地址: http://${ip}:${PORT}`)
 });
