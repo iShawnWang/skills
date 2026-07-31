@@ -8,7 +8,7 @@ import express from 'express'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { state } from './state.mjs'
+import { state, addBuildRecord, getStats, loadStatsFromFile } from './state.mjs'
 import { triggerBuild, getLatestCommitHash, sendFeishuNotification } from './build.mjs'
 
 const LOG_FILE = path.join(process.cwd(), 'builds.log')
@@ -36,6 +36,7 @@ const HELP_TEXT = `# 乔乔车小程序构建服务 (MCP + HTTP) 帮助文档
 | **/log** | GET | 获取当前或最近一次构建的实时详细日志 |
 | **/last-build** | GET | 获取上次成功构建的 Commit Hash 和时间 |
 | **/builds** | GET | 获取所有历史构建触发记录 (IP、时间、Commit) |
+| **/stats** | GET | 获取服务统计信息（启动时间、运行时长、构建总次数、每次执行的IP/Commit/时间） |
 | **/menu-query** | GET | 查询平台端管理后台路由对应的源码文件 |
 | **/health** | GET | 服务健康检查 |
 
@@ -129,6 +130,11 @@ const listToolsHandler = async () => {
           required: ["query"],
         },
       },
+      {
+        name: "get_stats",
+        description: "获取服务统计信息，包括启动时间、运行时长、构建总次数，以及每次执行的 IP、Commit Hash 和时间。",
+        inputSchema: { type: "object", properties: {} },
+      },
     ],
   };
 };
@@ -146,6 +152,12 @@ const callToolHandler = async (request) => {
       let commitHash = 'unknown'
       try { commitHash = await getLatestCommitHash() } catch (e) {}
       fs.appendFileSync(LOG_FILE, `[${time}] MCP Trigger, Commit: ${commitHash}\n`)
+      addBuildRecord({
+        ip: 'MCP',
+        commitHash,
+        timestamp: time,
+        source: 'MCP',
+      })
       triggerBuild()
       return { content: [{ type: "text", text: `Build started. Commit: ${commitHash}\n\n[AI 提示]: 构建已在后台启动。请你现在开始每隔 20 秒调用一次 get_build_status 检查状态，并在构建完成后（isBuilding 变为 false）告知用户结果。你可以通过 get_build_log 获取实时进度。` }] };
     }
@@ -204,6 +216,8 @@ const callToolHandler = async (request) => {
         return { content: [{ type: "text", text: `Error fetching menu tree: ${error.message}` }], isError: true };
       }
     }
+    case "get_stats":
+      return { content: [{ type: "text", text: JSON.stringify(getStats(), null, 2) }] };
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -313,10 +327,32 @@ app.get('/help', (req, res) => {
   res.send(HELP_TEXT)
 })
 
+function getClientIP(req) {
+  const forwarded = req.headers['x-forwarded-for']
+  if (forwarded) {
+    const ip = forwarded.split(',')[0].trim()
+    if (ip) return ip
+  }
+  const realIP = req.headers['x-real-ip']
+  if (realIP) return realIP
+  return req.ip || req.socket?.remoteAddress || '-'
+}
+
 const buildHandler = async (req, res) => {
   if (state.isBuilding) return res.status(409).json({ message: 'A build is already in progress.' })
+  const time = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
+  const ip = getClientIP(req)
+  let commitHash = 'unknown'
+  try { commitHash = await getLatestCommitHash() } catch (e) {}
+  fs.appendFileSync(LOG_FILE, `[${time}] HTTP Trigger (${ip}), Commit: ${commitHash}\n`)
+  addBuildRecord({
+    ip,
+    commitHash,
+    timestamp: time,
+    source: 'HTTP',
+  })
   triggerBuild()
-  res.status(202).json({ message: 'Build started.' })
+  res.status(202).json({ message: 'Build started.', commitHash, ip, timestamp: time })
 }
 
 app.get('/build', buildHandler)
@@ -328,6 +364,9 @@ app.get('/builds', (req, res) => {
   const content = fs.readFileSync(LOG_FILE, 'utf-8')
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
   res.send(content)
+})
+app.get('/stats', (req, res) => {
+  res.json(getStats())
 })
 app.get('/log', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
@@ -385,6 +424,7 @@ app.get(['/', '/health'], (req, res) => res.json({ status: 'ok', uptime: process
 // --- 启动服务 ---
 
 app.listen(PORT, () => {
+  loadStatsFromFile()
   const ip = getLocalIP()
   console.log(`Server is running on http://localhost:${PORT}`)
   console.log(`Standard SSE: http://localhost:${PORT}/sse`)
