@@ -1,5 +1,5 @@
 ---
-name: "zentao-bug-fix-workflow"
+name: "zentao-skill"
 description: "禅道 Bug 修复自动化工作流。当用户要求修复特定 Bug ID 时，此 Skill 会引导 AI 串联禅道、GitLab 并完成修复提交全流程。"
 ---
 

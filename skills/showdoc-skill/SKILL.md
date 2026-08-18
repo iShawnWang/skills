@@ -1,5 +1,5 @@
 ---
-name: showdoc
+name: showdoc-skill
 description: 从 ShowDoc 文档系统获取页面内容。此技能在以下情况触发：1) URL 包含 `/web/#/` 模式且末尾为数字（如 `http://wiki.yeqiao.cn:4999/web/#/625324075/123670000`）；2) 用户请求获取 ShowDoc 文档内容；3) 用户发送类似 `wiki.yeqiao.cn` 或 `172.17.188.123` 等 ShowDoc 域名链接。
 ---
 
