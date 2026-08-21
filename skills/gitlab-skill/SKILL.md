@@ -95,8 +95,18 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库、�
     - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
     - **分支**: 支持传入 `完整分支名` 或 `模糊分支名` (自动寻找最匹配的分支)。
 - **行为说明**: 创建 MR 后等待 5s 再执行合并（GitLab 需要时间初始化 MR），期间 stderr 会输出进度，属于正常现象，请耐心等待。
+- **输出增强**: 合并成功后会自动查询目标分支最新 commit，stdout 附带 `target_commit_id` / `target_commit_short` / `target_commit_title` 字段，可直接用于后续发布。
 - **调用场景**: 自动化部署、同步分支代码或完成开发任务时。
 - **指令**: `npx tsx src/index.ts merge "my-repo" "feature-1" "main"`
+
+### 8. 查询分支信息 (Branch Info)
+查询指定分支的最新 commit 信息，用于确认分支当前指向的提交。
+- **参数支持**:
+    - **仓库**: 支持传入 `Project ID` 或 `仓库名称` (模糊匹配)。
+    - **分支**: 支持传入 `完整分支名` 或 `模糊分支名` (自动寻找最匹配的分支)。
+- **输出字段**: `branch` / `merged` / `protected` / `default` / `commit_id` / `commit_short` / `commit_title` / `commit_message` / `author_name` / `committed_date`。
+- **调用场景**: 合并后确认目标分支 commit、发布前核对版本、排查分支指向问题时。
+- **指令**: `npx tsx src/index.ts branch-info "my-repo" "main"`
 
 ## 输出格式
 所有命令均输出 JSON 格式，方便 AI 解析。过程日志输出到 stderr，结果数据输出到 stdout。
@@ -107,3 +117,4 @@ description: "GitLab 集成插件，支持查询用户信息、搜索仓库、�
 > "基于 'main' 创建新分支 'feature-abc'，项目 ID 是 123"
 > "在 'feature-abc' 分支提交 README 变更并 push，项目 ID 是 123"
 > "将 'feature-abc' 分支合并到 'main' 分支，项目 ID 是 123"
+> "查询 'main' 分支的最新 commit 信息，项目 ID 是 123"

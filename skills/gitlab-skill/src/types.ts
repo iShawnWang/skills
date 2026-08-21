@@ -36,8 +36,10 @@ export interface GitLabBranch {
     id: string;
     short_id: string;
     title: string;
+    message: string;
     author_name: string;
     authored_date: string;
+    committed_date: string;
   };
 }
 

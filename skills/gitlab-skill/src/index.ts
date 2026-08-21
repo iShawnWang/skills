@@ -6,6 +6,7 @@ import { mergeBranches } from "./commands/merge.js";
 import { createBranch } from "./commands/branch.js";
 import { commitToBranch } from "./commands/commit.js";
 import { getFileContent, listTree } from "./commands/files.js";
+import { branchInfo } from "./commands/branch-info.js";
 
 const USAGE = `用法: npx tsx src/index.ts <command> [参数]
 
@@ -18,7 +19,8 @@ const USAGE = `用法: npx tsx src/index.ts <command> [参数]
   branch <project_id_or_name> <new_branch> <ref>       基于某个分支创建新分支
   commit <project_id_or_name> <branch> <message> <actions_json_or_@file>
                                                        在某个分支提交代码并 push
-  merge <project_id_or_name> <source> <target> [title] 合并分支`;
+  merge <project_id_or_name> <source> <target> [title] 合并分支
+  branch-info <project_id_or_name> <branch>            查询分支最新 commit 信息`;
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -66,6 +68,10 @@ async function main(): Promise<void> {
 
     case "commit":
       await commitToBranch(client, args[1], args[2], args[3], args[4]);
+      break;
+
+    case "branch-info":
+      await branchInfo(client, args[1], args[2]);
       break;
 
     default:

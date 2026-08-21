@@ -1,5 +1,6 @@
 import type { GitLabClient } from "../client.js";
 import type {
+  GitLabBranch,
   GitLabMergeRequest,
   GitLabMergeRequestChanges,
 } from "../types.js";
@@ -177,12 +178,34 @@ export async function mergeBranches(
     );
 
     if (mergeResult.state === "merged") {
+      // 查询目标分支最新 commit（合并后可能尚未同步，最多重试 3 次）
+      let targetCommit: GitLabBranch["commit"] | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const branchInfo = await client.get<GitLabBranch>(
+            `/projects/${projectId}/repository/branches/${encodeURIComponent(targetBranch)}`
+          );
+          if (branchInfo.commit?.id) {
+            targetCommit = branchInfo.commit;
+            break;
+          }
+        } catch {
+          // 忽略错误，继续重试
+        }
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
       console.log(JSON.stringify({
         success: true,
         message: "合并成功",
         mr_url: mr.web_url,
         source_branch: sourceBranch,
         target_branch: targetBranch,
+        target_commit_id: targetCommit?.id ?? null,
+        target_commit_short: targetCommit?.short_id ?? null,
+        target_commit_title: targetCommit?.title ?? null,
       }));
     } else {
       console.log(JSON.stringify({
