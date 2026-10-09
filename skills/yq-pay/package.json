@@ -1,0 +1,14 @@
+{
+  "name": "yq-pay",
+  "version": "1.0.0",
+  "description": "业乔支付中心：按订单号查询支付订单，并模拟支付成功回调",
+  "type": "module",
+  "scripts": {
+    "yq-pay": "npx tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
