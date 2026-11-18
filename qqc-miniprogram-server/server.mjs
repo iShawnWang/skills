@@ -15,8 +15,8 @@ import {
   getQueueSnapshot,
   getQueuePosition,
 } from './state.mjs'
-import { triggerBuild, sendFeishuNotification, BUILD_LOG_FILE } from './build.mjs'
-import { PROJECTS, PROJECT_IDS, resolveProject, warnDuplicateAliases } from './projects.mjs'
+import { triggerBuild, sendFeishuNotification, BUILD_LOG_FILE, checkProjectEnvironment } from './build.mjs'
+import { PROJECTS, PROJECT_IDS, resolveProject, warnDuplicateAliases, repoCwd } from './projects.mjs'
 
 const LOG_FILE = BUILD_LOG_FILE
 const PORT = 3000
@@ -314,6 +314,12 @@ const callToolHandler = async (request) => {
       const result = await triggerBuild(project, { ip: 'MCP', source: 'MCP' });
       const pollHint = `请你现在开始每隔 20 秒调用一次 get_build_status（project: ${project.id}），直到 isBuilding === false 且 queuePosition === null 才算结束。你可以通过 get_build_log 获取实时进度。`;
 
+      if (result.invalid) {
+        return {
+          content: [{ type: "text", text: `无法构建 ${project.id}：${result.message}` }],
+          isError: true,
+        };
+      }
       if (result.busy) {
         return {
           content: [{ type: "text", text: `A build for ${project.id} is already in progress.` }],
@@ -550,6 +556,14 @@ const buildHandler = async (req, res) => {
   if (error) return res.status(400).json(error)
 
   const result = await triggerBuild(project, { ip: getClientIP(req), source: 'HTTP' })
+  if (result.invalid) {
+    return res.status(500).json({
+      error: 'project not configured',
+      message: result.message,
+      project: project.id,
+      hint: `在 .env 里配置 PROJECT_PATH，指向小程序仓库的绝对路径`,
+    })
+  }
   if (result.busy) {
     return res.status(409).json({
       message: `A build for ${project.id} is already in progress.`,
@@ -735,10 +749,20 @@ warnDuplicateAliases()
 app.listen(PORT, () => {
   loadStatsFromFile()
   const ip = getLocalIP()
-  const projectLines = PROJECTS.map((p) => ` - ${p.id} (${p.label}) → ${p.branch}`).join('\n')
+
+  // 启动时把仓库目录与自检结果打出来 —— 配置错了当场就能看见，
+  // 不用等第一次触发构建失败才发现
+  const repo = repoCwd() || '(未配置 PROJECT_PATH)'
+  const repoProblem = checkProjectEnvironment(PROJECTS[0])
+
   console.log(`Server is running on http://localhost:${PORT}`)
   console.log(`Standard SSE: http://localhost:${PORT}/sse`)
-  console.log(`Projects:\n${projectLines}`)
+  console.log(`Repo: ${repo}`)
+  console.log(`Projects:\n${PROJECTS.map((p) => ` - ${p.id} (${p.label}) → ${p.branch}`).join('\n')}`)
+
+  if (repoProblem) {
+    console.error(`\n⚠ 仓库配置有问题，触发任何构建都会直接失败：\n  ${repoProblem}`)
+  }
 
   sendFeishuNotification(
     `${process.env.NOTIFICATION_KEYWORD || '[YQ]'} 构建服务已启动\n地址: http://${ip}:${PORT}\n已接入小程序:\n${PROJECTS.map((p) => `- ${p.id} ${p.label}`).join('\n')}`,

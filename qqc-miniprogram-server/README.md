@@ -74,13 +74,14 @@
 ```env
 FEISHU_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/...
 NOTIFICATION_KEYWORD=[YQ]
-# 乔乔车代码目录
+# 小程序代码目录（两个项目共用同一份代码，靠切分支区分）
 PROJECT_PATH=/Users/qckj/work/qqc-miniprogram
-# 车辆交易市场代码目录（共用同一份代码时填同一个路径）
-PROJECT_PATH_CAR=/Users/qckj/work/qqc-miniprogram
 # 可选：车辆交易市场单独的飞书群，不填复用 FEISHU_WEBHOOK_URL
 # FEISHU_WEBHOOK_URL_CAR=https://open.feishu.cn/open-apis/bot/v2/hook/...
 ```
+
+> 两个项目共用同一个仓库目录，所以只有一个 `PROJECT_PATH`。区别只在服务构建前
+> `git checkout` 到哪条分支：`YQ-QQC → master-mp-test`、`YQ-CAR → master-mp-car-test`。
 
 ### 3. 安装与运行
 ```bash
@@ -134,10 +135,9 @@ pm2 describe qqc-mp-server | grep -i cwd
 
 把 `server.mjs` / `build.mjs` / `state.mjs` / `projects.mjs` / `README.md` / `.env.example` 复制到上一步的目录。
 
-`.env` 至少补上新键（与已有的 `PROJECT_PATH` 值相同，因为两项目共用一份代码）：
+`.env` **不需要新增必填键** —— 两个项目共用同一个 `PROJECT_PATH`，已有的那份继续用。可选：
 
 ```env
-PROJECT_PATH_CAR=/Users/qckj/work/qqc-miniprogram
 # 可选，不填则复用 FEISHU_WEBHOOK_URL
 # FEISHU_WEBHOOK_URL_CAR=https://open.feishu.cn/open-apis/bot/v2/hook/...
 ```

@@ -13,7 +13,7 @@ import {
   isProjectBusy,
   getQueueSnapshot,
 } from './state.mjs'
-import { getProject, projectCwd, projectWebhook } from './projects.mjs'
+import { getProject, repoCwd, projectWebhook } from './projects.mjs'
 
 // 加载环境变量
 function loadEnv() {
@@ -39,25 +39,57 @@ function now() {
   return new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
 }
 
-/** 跑一条命令，只关心退出码。 */
+/**
+ * 跑一条命令，返回退出码与输出。
+ * 必须收集输出 —— 否则 checkout 失败时日志里只有 "code 1"，
+ * 看不出是"目录不是 git 仓库"还是"分支不存在"还是"工作区有未提交改动"。
+ */
 function runCommand(cmd, args, cwd) {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd })
+    let output = ''
     let settled = false
     const settle = (result) => {
       if (settled) return
       settled = true
       resolve(result)
     }
-    child.on('error', (err) => settle({ code: -1, error: err.message }))
-    child.on('close', (code) => settle({ code }))
+    child.stdout.on('data', (data) => {
+      output += data.toString()
+    })
+    child.stderr.on('data', (data) => {
+      output += data.toString()
+    })
+    child.on('error', (err) => settle({ code: -1, error: err.message, output: '' }))
+    child.on('close', (code) => settle({ code, output: output.trim() }))
   })
-}/**
+}
+
+/**
+ * 构建前的环境自检：确认 PROJECT_PATH 已配置、目录存在、是 git 仓库。
+ * 这些条件不满足时 checkout 必失败，提前给出能直接照做的报错，
+ * 比让用户在 "code 1" 里猜要好。
+ */
+export function checkProjectEnvironment(project) {
+  const cwd = repoCwd()
+  if (!cwd) {
+    return `没有配置 PROJECT_PATH，无法确定小程序仓库目录。请在 .env 里加上 PROJECT_PATH=<小程序仓库绝对路径>（两个项目共用这一个目录）`
+  }
+  if (!fs.existsSync(cwd)) {
+    return `小程序仓库目录不存在: ${cwd}（来自 PROJECT_PATH），请检查该配置`
+  }
+  if (!fs.existsSync(path.join(cwd, '.git'))) {
+    return `目录不是 git 仓库: ${cwd}（来自 PROJECT_PATH，缺少 .git），请把它指向小程序仓库目录`
+  }
+  return null
+}
+
+/**
  * 读取项目分支的 HEAD。
  * 共用目录下必须读分支 ref 而不是 HEAD —— 否则目录停在另一条分支时会记成别的项目的 commit。
  */
 export function getLatestCommitHash(project) {
-  const cwd = projectCwd(project)
+  const cwd = repoCwd()
   const branch = project.branch
   return new Promise((resolve, reject) => {
     const git = spawn('git', ['rev-parse', '--short', `refs/heads/${branch}`], { cwd })
@@ -120,7 +152,7 @@ function writeBuildLog(line) {
  */
 async function executeBuild(project, job) {
   const id = project.id
-  const cwd = projectCwd(project)
+  const cwd = repoCwd()
   const startTime = now()
 
   setBuilding(id, true)
@@ -144,13 +176,29 @@ async function executeBuild(project, job) {
     source: job.source,
   })
 
+  // 第 0 步：环境自检（目录存在、是 git 仓库、分支存在）
+  const envProblem = checkProjectEnvironment(project)
+  if (envProblem) {
+    appendLog(id, `环境自检失败：${envProblem}\n`)
+    await failBuild(project, job, '环境自检', -1, envProblem)
+    return
+  }
+
+  const branchCheck = await runCommand('git', ['rev-parse', '--verify', `refs/heads/${project.branch}`], cwd)
+  if (branchCheck.code !== 0) {
+    const msg = `分支 ${project.branch} 在 ${cwd} 里不存在，请确认 PROJECT_PATH 指向了正确的小程序仓库，且该分支已 fetch 下来`
+    appendLog(id, `${msg}\n`)
+    await failBuild(project, job, '环境自检', branchCheck.code, msg)
+    return
+  }
+
   // 第 1 步：切到项目分支
   appendLog(id, `$ git checkout ${project.branch}\n`)
   const checkout = await runCommand('git', ['checkout', project.branch], cwd)
   if (checkout.code !== 0) {
-    const err = checkout.error ? ` (${checkout.error})` : ''
-    appendLog(id, `\ngit checkout failed with code ${checkout.code}${err}\n`)
-    await failBuild(project, job, 'git checkout', checkout.code)
+    const detail = [checkout.error, checkout.output].filter(Boolean).join(' | ')
+    appendLog(id, `\ngit checkout failed with code ${checkout.code}\n${detail}\n`)
+    await failBuild(project, job, 'git checkout', checkout.code, detail)
     return
   }
 
@@ -196,7 +244,7 @@ async function executeBuild(project, job) {
 }
 
 /** 失败统一出口：写日志、推飞书（带失败步骤与仍在排队的项目）、出队继续。 */
-async function failBuild(project, job, step, code) {
+async function failBuild(project, job, step, code, detail) {
   const id = project.id
   const time = now()
   appendLog(id, `\nBuild failed at step: ${step} (code ${code})\n`)
@@ -205,9 +253,11 @@ async function failBuild(project, job, step, code) {
   const queuedText = queue.length
     ? `\n仍在排队: ${queue.map((q) => `${q.project}(第${q.position}位)`).join(', ')}`
     : ''
+  // 把具体原因带进飞书通知，否则群里只看到 "失败"，还得有人来翻日志
+  const detailText = detail ? `\n原因: ${detail}` : ''
 
   await sendFeishuNotification(
-    `${project.notifyPrefix} 构建发布失败\n时间: ${time}\n失败步骤: ${step}\n错误代码: ${code}${queuedText}\n请访问 /log?project=${id} 查看详细构建日志。`,
+    `${project.notifyPrefix} 构建发布失败\n时间: ${time}\n失败步骤: ${step}\n错误代码: ${code}${detailText}${queuedText}\n请访问 /log?project=${id} 查看详细构建日志。`,
     project,
   )
   finishBuild(project)
@@ -239,7 +289,7 @@ export function startNextJob() {
 
 /**
  * 触发一次构建。
- * 返回 { started } | { queued, position } | { busy } | { full }
+ * 返回 { started } | { queued, position } | { busy } | { full } | { invalid, message }
  *
  * 注意：先占位（enqueue 或设置 running）再 await 取 commit hash。
  * 共用目录同一时刻只能跑一个构建，如果等 hash 回来才占位，
@@ -247,6 +297,11 @@ export function startNextJob() {
  */
 export async function triggerBuild(project, job = {}) {
   const id = project.id
+
+  // 配置错了就别占位、别入队 —— 直接把可照做的原因回给调用方
+  const envProblem = checkProjectEnvironment(project)
+  if (envProblem) return { invalid: true, message: envProblem }
+
   if (isProjectBusy(id)) return { busy: true }
   if (state.queue.length >= MAX_QUEUE) return { full: true }
 

@@ -92,8 +92,6 @@
   label: '乔乔车小程序',
   aliases: ['qqc', 'mp', '乔乔车'],
   branch: 'master-mp-test',
-  cwdEnv: 'PROJECT_PATH',             // 目录从 env 读，便于构建机覆盖
-  cwdDefault: process.cwd(),
   buildScript: 'ci:dev',              // → pnpm run ci:dev
   appid: 'wx72082d541b129ee4',
   notifyPrefix: '[YQ] 乔乔车',
@@ -101,13 +99,15 @@
 }
 ```
 
-`YQ-CAR`：`label 车辆交易市场`、`aliases ['car','养车']`、`branch master-mp-car-test`、`cwdEnv PROJECT_PATH_CAR`、`buildScript ci:dev`、`appid wx97dd5b2518e80061`、`notifyPrefix '[YQ] 车辆交易市场'`、`webhookEnv FEISHU_WEBHOOK_URL_CAR`。
+`YQ-CAR`：`label 车辆交易市场`、`aliases ['car','养车']`、`branch master-mp-car-test`、`buildScript ci:dev`、`appid wx97dd5b2518e80061`、`notifyPrefix '[YQ] 车辆交易市场'`、`webhookEnv FEISHU_WEBHOOK_URL_CAR`。
 
 **两个项目的 `buildScript` 都是 `ci:dev`** —— 脚本名不区分项目，区分靠的是先 checkout 到各自 `branch`（§5.10）。注册表里保留 `buildScript` 字段只是为了将来某个项目真需要不同命令时有地方放，现在两项同值。
 
-**两项目共用目录**时 `PROJECT_PATH_CAR` 与 `PROJECT_PATH` 填同一个路径；用两个变量是为了将来真拆目录时只改 env。
+**两项目共用同一个仓库目录，所以只有一个 `PROJECT_PATH`**，注册表里不按项目登记目录，导出的是全局 `repoCwd()`。理由：两条线是同一个 uni-app 仓库的不同分支，本来就没有"第二个目录"这个东西；按项目配变量只会让人以为可以拆开、然后在只配一个时期待静默回落。**不做 `project.cwdEnv`、不做 `process.cwd()` 回落** —— 曾经回落到服务自己的目录，变量没配时 `git checkout` 在一个非 git 目录里只报一个没有上下文的 `code 1`。
 
-导出：`PROJECTS`、`PROJECT_IDS`、`resolveProject(value)`（id / alias / 中文 label，大小写与首尾空格不敏感，命中失败返回 `null`）、`projectCwd(p)`、`projectWebhook(p)`。
+导出：`PROJECTS`、`PROJECT_IDS`、`resolveProject(value)`（id / alias / 中文 label，大小写与首尾空格不敏感，命中失败返回 `null`）、`repoCwd()`、`projectWebhook(p)`。
+
+**启动自检**：`checkProjectEnvironment()` 在服务启动时与每次构建前各跑一次，检查 `PROJECT_PATH` 已配置、目录存在、目录里有 `.git`。启动时把结果打出来，配置错了当场可见；构建前再查一次，不通过则 `triggerBuild` 直接返回 `{invalid}`，**不占位、不入队、不写构建记录**，HTTP 侧回 500 + 可照做的修复提示。
 
 **冲突规则**：id 必须全局唯一；alias / label 命中原表的多值时**先匹配 id，再按注册表顺序取第一个**，并在**进程启动时**扫描一遍别名表，发现重复就打印警告（不阻断启动）。当前两个项目没有别名冲突。
 
@@ -156,7 +156,7 @@ state = {
 
 **每次构建的执行顺序（方案乙，见 §5.10）**：
 
-1. `git checkout <project.branch>`（cwd = `projectCwd(p)`）—— 由服务执行，失败即本次构建失败。
+1. `git checkout <project.branch>`（cwd = `repoCwd()`）—— 由服务执行，失败即本次构建失败。
 2. `pnpm run <project.buildScript>`（cwd 同上）—— 现在两个项目都是 `ci:dev`。**必须在第 1 步之后**，否则脚本名会从「当前目录所在分支」的 `package.json` 解析。
 
 两步都完整记录到 `builds.log` / `/log`，失败通知里带上失败发生在哪一步。
@@ -293,7 +293,7 @@ git checkout master-mp-car-test && touch ./src/manifest.json && echo '{}' > ./sr
 
 所以服务侧的动作顺序固定为：
 
-1. `git checkout <project.branch>`（cwd = `projectCwd(p)`）
+1. `git checkout <project.branch>`（cwd = `repoCwd()`）
 2. `pnpm run ci:dev`（cwd 同上）
 
 这样第 1 步先把目录切到目标项目家族的分支，第 2 步读到的 `package.json` 必然是该项目自己那份写死 appid 的版本，「读哪份 `package.json`」与「要构建哪个项目」严格一致。服务侧完全不依赖构建机当前停在哪个分支。第 1 步失败 → 该次构建按失败出队（§5.3），不再执行第 2 步。
@@ -328,7 +328,7 @@ git checkout master-mp-car-test && touch ./src/manifest.json && echo '{}' > ./sr
 1. **仓库侧（可在本机做）**：只改 car 家族的 2 个分支 —— `master-mp-car`、`master-mp-car-test`，各改 `package.json` 的 `ci:dev` 一行 + `scripts/upload-dev.mjs` 的 appid/私钥两处；qqc 家族不动。push 到 `172.17.188.125`。
 2. **构建机**：`git fetch` 后把 `master-mp-car` / `master-mp-car-test` 更新到最新（私钥已在仓库里，随 pull 一起下来，无需手工复制）。
 3. **验证仓库侧（构建机上，人工）**：在 `master-mp-car-test` 上手动 `pnpm run ci:dev` 跑通一次（会真实上传一个车辆交易市场体验版），再 `git checkout master-mp-test && pnpm run ci:dev` 确认乔乔车没坏。
-4. **服务侧（可在本机做文件，部署需人）**：产出新的 `server.mjs / build.mjs / state.mjs / projects.mjs` 与 `.env` 新增项（`PROJECT_PATH_CAR`），交给能登录 192.168.91.61 的人覆盖、`pm2 restart qqc-mp-server`。
+4. **服务侧（可在本机做文件，部署需人）**：产出新的 `server.mjs / build.mjs / state.mjs / projects.mjs`，交给能登录 192.168.91.61 的人覆盖、`pm2 restart qqc-mp-server`。`.env` **不需要改** —— 两个项目共用已有的 `PROJECT_PATH`（可选新增 `FEISHU_WEBHOOK_URL_CAR` 给车辆交易市场单独建群）。
    - 重启前确认 `pm2 describe qqc-mp-server` 的 **cwd**，新的 `.env` 必须放在那个目录（见 5.2）。
    - 重启前确认没有构建在跑（队列与 `running` 只在内存）。
 5. **验证服务侧**：`GET /projects` → `GET /status?project=YQ-CAR` → `POST /build?project=YQ-CAR`。

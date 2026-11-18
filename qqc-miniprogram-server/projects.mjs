@@ -22,6 +22,9 @@ loadEnv()
  *
  * branch 与 appid 的对应关系写死在小程序仓库各自分支的 ci:dev / upload-dev.mjs 里，
  * 这里登记的是服务侧需要知道的事实（切哪条分支、显示什么名字、用哪个飞书前缀）。
+ *
+ * 两个项目共用同一个仓库目录（区别只在切哪条分支），所以都用 PROJECT_PATH，
+ * 不需要按项目配目录。
  */
 export const PROJECTS = [
   {
@@ -29,8 +32,6 @@ export const PROJECTS = [
     label: '乔乔车小程序',
     aliases: ['qqc', 'mp', '乔乔车'],
     branch: 'master-mp-test',
-    cwdEnv: 'PROJECT_PATH',
-    cwdDefault: process.cwd(),
     buildScript: 'ci:dev',
     appid: 'wx72082d541b129ee4',
     notifyPrefix: '[YQ] 乔乔车',
@@ -41,8 +42,6 @@ export const PROJECTS = [
     label: '车辆交易市场',
     aliases: ['car', '养车'],
     branch: 'master-mp-car-test',
-    cwdEnv: 'PROJECT_PATH_CAR',
-    cwdDefault: process.cwd(),
     buildScript: 'ci:dev',
     appid: 'wx97dd5b2518e80061',
     notifyPrefix: '[YQ] 车辆交易市场',
@@ -82,9 +81,14 @@ export function getProject(id) {
   return BY_ID.get(id) || null
 }
 
-/** 项目目录：优先取 env（构建机可覆盖），回落 cwdDefault。 */
-export function projectCwd(p) {
-  return process.env[p.cwdEnv] || p.cwdDefault
+/**
+ * 小程序仓库目录：全局唯一一个，两个项目共用。
+ *
+ * 只从 PROJECT_PATH 读，没有 process.cwd() 回落 —— 曾经回落到服务自己的目录，
+ * 变量没配时 git checkout 在非 git 目录里只报一个没有上下文的 code 1。
+ */
+export function repoCwd() {
+  return process.env.PROJECT_PATH || ''
 }
 
 /** 项目专属飞书 webhook，未配置则复用默认 webhook。 */
