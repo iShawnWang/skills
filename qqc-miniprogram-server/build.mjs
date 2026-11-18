@@ -85,27 +85,64 @@ export function checkProjectEnvironment(project) {
 }
 
 /**
+ * 找一个分支对应的引用，找不到返回 null。
+ *
+ * 不能只看 refs/heads/<branch> —— 构建机可能只在这个目录里 checkout 过乔乔车那条线，
+ * 车辆交易市场的分支只以 refs/remotes/origin/<branch> 的形式存在（或者压根还没 fetch 回来）。
+ * 只看本地引用会把它误判成"分支不存在"。
+ */
+async function findBranchRef(branch, cwd) {
+  const candidates = [`refs/heads/${branch}`, `refs/remotes/origin/${branch}`]
+  for (const ref of candidates) {
+    const result = await runCommand('git', ['rev-parse', '--verify', '--quiet', ref], cwd)
+    if (result.code === 0) return ref
+  }
+  return null
+}
+
+/**
+ * 确保分支可用：本地引用 → 远端跟踪引用 → 主动 fetch 一次再找。
+ * 返回 { ref } 或 { error }。
+ */
+export async function ensureBranchAvailable(branch, cwd) {
+  const ref = await findBranchRef(branch, cwd)
+  if (ref) return { ref }
+
+  // 两种引用都没有：可能是这个目录从没 fetch 过这条分支（全新/只拉过另一条线）
+  const fetch = await runCommand('git', ['fetch', 'origin', branch], cwd)
+  if (fetch.code === 0) {
+    const fetchedRef = await findBranchRef(branch, cwd)
+    if (fetchedRef) return { ref: fetchedRef }
+    return {
+      error: `分支 ${branch} 在 ${cwd} 里取不到：git fetch origin ${branch} 执行成功，但仍没有对应的本地或远端引用`,
+    }
+  }
+
+  const reason = [fetch.error, fetch.output].filter(Boolean).join(' | ')
+  return {
+    error:
+      `分支 ${branch} 在 ${cwd} 里不存在：本地（refs/heads）与远端（refs/remotes/origin）都没有，` +
+      `尝试 git fetch origin ${branch} 也失败了${reason ? `（${reason}）` : ''}。` +
+      `请确认 PROJECT_PATH 指向了正确的小程序仓库，且构建机有拉取该仓库的权限`,
+  }
+}
+
+/**
  * 读取项目分支的 HEAD。
  * 共用目录下必须读分支 ref 而不是 HEAD —— 否则目录停在另一条分支时会记成别的项目的 commit。
  */
-export function getLatestCommitHash(project) {
+export async function getLatestCommitHash(project) {
   const cwd = repoCwd()
   const branch = project.branch
-  return new Promise((resolve, reject) => {
-    const git = spawn('git', ['rev-parse', '--short', `refs/heads/${branch}`], { cwd })
-    let hash = ''
-    git.stdout.on('data', (data) => {
-      hash += data.toString()
-    })
-    git.on('error', (err) => reject(err))
-    git.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Failed to get latest commit hash for ${branch}`))
-        return
-      }
-      resolve(hash.trim())
-    })
-  })
+  const ref = await findBranchRef(branch, cwd)
+  if (!ref) {
+    throw new Error(`Failed to get latest commit hash for ${branch}`)
+  }
+  const result = await runCommand('git', ['rev-parse', '--short', ref], cwd)
+  if (result.code !== 0) {
+    throw new Error(`Failed to get latest commit hash for ${branch}`)
+  }
+  return result.output
 }
 
 export async function sendFeishuNotification(message, project) {
@@ -184,11 +221,11 @@ async function executeBuild(project, job) {
     return
   }
 
-  const branchCheck = await runCommand('git', ['rev-parse', '--verify', `refs/heads/${project.branch}`], cwd)
-  if (branchCheck.code !== 0) {
-    const msg = `分支 ${project.branch} 在 ${cwd} 里不存在，请确认 PROJECT_PATH 指向了正确的小程序仓库，且该分支已 fetch 下来`
-    appendLog(id, `${msg}\n`)
-    await failBuild(project, job, '环境自检', branchCheck.code, msg)
+  // 第 0 步：确认项目分支可用（本地引用 / 远端跟踪引用 / 现场 fetch 一次）
+  const branchInfo = await ensureBranchAvailable(project.branch, cwd)
+  if (branchInfo.error) {
+    appendLog(id, `${branchInfo.error}\n`)
+    await failBuild(project, job, '环境自检', -1, branchInfo.error)
     return
   }
 

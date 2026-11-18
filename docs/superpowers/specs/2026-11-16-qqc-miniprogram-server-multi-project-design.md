@@ -149,7 +149,7 @@ state = {
 - 队首结束（成功或失败）后自动启动下一个，并照常推送飞书。
 - **任何一步失败都出队并继续**：`git checkout` 失败、`git pull` 失败（脏工作区）、`pnpm install` 失败、编译失败、上传失败，一律视为"这一次构建结束"，弹出队首、写失败记录、推飞书、启动下一个。队列绝不能因为一次失败而卡住两个项目。失败通知里附带当前仍在排队的项目。
 - 入队时记录 `ip / source / requestedAt / requestedCommit`，**在真正开始构建时才写 `builds.log` 和 `stat.log`**，这样记录里的时间与 commit 就是实际构建的那一次。
-- `requestedCommit` 用 `git rev-parse --short <branch>`（见 5.4）在触发时取；开始构建时**不再重取**，避免与"用户触发时刻看到的分支"不一致。**入队前不做 `git fetch`** —— 本地分支 ref 反映的是"上一次构建 pull 到的状态"，这是可接受的近似；真正的远端状态以 `ci:dev` 里的 `git pull` 为准，构建结束后再取一次拿到的是实际被上传的 commit（见下一条）。`requestedCommit` 在 `/builds` 里标注为"触发时本地分支"，不要用"远端最新"来描述它。
+- `requestedCommit` 用分支引用（见 5.4）在触发时取；开始构建时**不再重取**，避免与"用户触发时刻看到的分支"不一致。**入队前不做 `git fetch`** —— 分支 ref 反映的是"上一次构建 pull 到的状态"，这是可接受的近似；真正的远端状态以 `ci:dev` 里的 `git pull` 为准，构建结束后再取一次拿到的是实际被上传的 commit（见下一条）。`requestedCommit` 在 `/builds` 里标注为"触发时本地分支"，不要用"远端最新"来描述它。
 - **先占位、再取 hash**：`triggerBuild` 必须先把本次构建放进 `running` 或 `queue`，之后才 `await` 取 commit。若先 await 再占位，两个项目几乎同时触发时会双双通过 `isProjectBusy` 检查、一起开跑，在共用目录上互相踩。实测并发触发已验证：第二次触发得到 `queued` 而不是 `started`。
 - 构建成功的 `lastBuild.commitHash` 在构建结束后重新取一次分支 ref —— 此时 `git pull` 已发生，拿到的是真正被上传的 commit。
 - 队列上限 10 在只有两个项目、且同项目重复触发会 409 时**实际不可达**（队列最多 1 项）。保留这个判断做防御（例如将来注册第三个项目、或加了并发入口），但**不进验收标准**，不写测试——它是纯防御分支。
@@ -163,13 +163,17 @@ state = {
 
 ### 5.4 `getLatestCommitHash()` 修正（必须）
 
-现在读 `HEAD`，共用目录切分支后会读到另一个项目的 HEAD。改为：
+现在读 `HEAD`，共用目录切分支后会读到另一个项目的 HEAD。改为读**分支引用**：
 
 ```
-git rev-parse --short refs/heads/<project.branch>     // cwd = project.cwd
+git rev-parse --short <ref>     // cwd = repoCwd()
 ```
 
-本地分支不存在时报错（构建会因 `git checkout` 失败先失败，属于同因）。
+`<ref>` 按 `refs/heads/<project.branch>` → `refs/remotes/origin/<project.branch>` 顺序解析，先命中先用（`findBranchRef`）。
+
+**为什么不能只看 `refs/heads/`**：构建机可能只在这个目录里 checkout 过乔乔车那条线，车辆交易市场的分支只以远端跟踪引用 `refs/remotes/origin/master-mp-car-test` 的形式存在。只看本地引用会把它误判成"分支不存在"，实测已踩（报错 `分支 master-mp-car-test 不存在`，而远端明明有）。
+
+构建前的环境自检用 `ensureBranchAvailable()`：两种引用都找不到时，主动 `git fetch origin <branch>` 一次再找；仍找不到才失败，报错里带上 `git fetch` 的原始输出（`fatal: couldn't find remote ref ...`），便于区分"分支名写错"与"没权限"。
 
 ### 5.5 HTTP 接口
 
