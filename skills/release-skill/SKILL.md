@@ -2,7 +2,7 @@
 name: release-skill
 description: |
   用于软件发版的编排 Skill。
-  负责协调 GitLab 分支合并、Spug 发布以及 qqc-miniprogram-server 小程序发布。
+  负责协调 GitLab 分支合并、Spug 发布以及 qqc-miniprogram-mcp-server 小程序发布。
   通过持久化 Memory 记录历史发版操作，让 AI 能够根据过去的操作习惯推断当前发版方式。
 ---
 
@@ -52,7 +52,7 @@ description: |
 
 - gitlab skill
 - spug skill
-- qqc-miniprogram-server skill
+- qqc-miniprogram-mcp-server（MCP server，非 Skill）
 
 它主要负责：
 
@@ -60,7 +60,7 @@ description: |
 2. 查询历史发版 Memory。
 3. 根据历史操作推断用户没有明确说明的信息。
 4. 调用 GitLab Skill 执行分支合并。
-5. 调用 Spug Skill 或 qqc-miniprogram-server 执行发布。
+5. 调用 Spug Skill 或 qqc-miniprogram-mcp-server 执行发布。
 6. 根据实际执行结果记录新的 Memory。
 7. 随着用户后续操作不断积累和更新对用户发版习惯的理解。
 
@@ -405,15 +405,66 @@ MR !1078 合并失败，存在冲突，涉及文件：
 
 如果是小程序发布：
 
-使用 `qqc-miniprogram-server` Skill。
+使用 `qqc-miniprogram-mcp-server` 这个 MCP server（SSE 地址：`http://<构建机IP>:3000/sse`）。
 
-根据该 Skill 提供的能力：
+根据该 MCP server 提供的能力：
 
 - 构建
 - 发布
 - 查询发布状态
 
 不要自行编造小程序项目 ID、环境或其他参数。
+
+### 必须先确定是哪个小程序
+
+该服务同时服务**两个**小程序，两个项目共用同一份代码目录，构建前服务会自己把目录切到对应分支：
+
+| project | 小程序 | 构建分支 | 合并目标 |
+| :--- | :--- | :--- | :--- |
+| `YQ-QQC` | 乔乔车小程序 | `master-mp-test` | `master-mp-test` |
+| `YQ-CAR` | 车辆交易市场 | `master-mp-car-test` | `master-mp-car-test` |
+
+`project` 是**必填参数**。不传或传错会返回 400 并列出可选值，**服务不会默认成乔乔车**。
+
+- 用户说「发小程序 xxx」「按之前的发」，先看 Memory 里同一分支历史上的 `project_id`。
+- 如果 Memory 里没有任何记录能确定是哪个小程序，**必须停下来问用户**，不要猜。
+- 用户明确说「车辆交易市场」「养车」「car」时用 `YQ-CAR`；说「乔乔车」「qqc」时用 `YQ-QQC`。
+- 不确定有哪些项目时，先调 `list_projects` 工具（HTTP：`GET /projects`）。
+
+### 合并目标必须与项目匹配
+
+两个小程序的合并目标是**不同**的分支：
+
+```text
+YQ-QQC  =  feat/xxx  →  master-mp-test      →  构建 YQ-QQC
+YQ-CAR  =  feat/xxx  →  master-mp-car-test  →  构建 YQ-CAR
+```
+
+不能因为历史上乔乔车一直是 `master-mp-test`，就把车辆交易市场的发布也合并到 `master-mp-test` —— 那样合并成功了，但构建出来的还是乔乔车的包。
+
+### 轮询结束条件（容易误判）
+
+触发构建后需要轮询 `get_build_status`，结束条件是：
+
+```text
+isBuilding === false  且  queuePosition === null
+```
+
+**只看 `isBuilding` 会误判**。两个项目共用一份代码目录，同一时刻只允许一个构建在跑：
+另一项目正在构建时触发本项目，会返回「已入队，position: n」，此时该项目的 `isBuilding` 仍然是 `false`。
+只等 `isBuilding === false` 会立刻认为构建已完成，并向用户报告成功。
+
+`trigger_build` 的三种返回必须区分：
+
+- `Build started` —— 真正开始构建
+- `Queued at position n` —— 正在排队，尚未开始
+- `A build for XXX is already in progress`（isError）—— 该项目已在构建或已在队列
+
+### 超时与失败
+
+小程序构建含 `pnpm install` + 编译 + 上传，正常需要数分钟；排队时还要等前一个构建结束。
+如果轮询超过 20 分钟仍是 `isBuilding: true` 或 `queuePosition` 非空，**不要宣布成功**，
+把 `/status?project=xxx` 与 `/log?project=xxx` 的实际内容告诉用户，由用户判断。
 
 ---
 
@@ -440,6 +491,46 @@ MR !1078 合并失败，存在冲突，涉及文件：
 ```
 
 不能把失败的操作记录成成功。
+
+---
+
+## 小程序发布记录
+
+小程序发布（`provider: qqc-miniprogram`）除上面的通用字段外，必须额外记录：
+
+| 字段 | 说明 |
+| :--- | :--- |
+| `project_id` | 服务端的项目 id：`YQ-QQC` 或 `YQ-CAR`。**不要只写中文名**，中文名是给人看的，`project_id` 是调用参数 |
+| `application` | 小程序中文名：`乔乔车小程序` / `车辆交易市场`（保留，便于阅读历史） |
+| `merge.target` | 必须与该 `project_id` 对应的分支一致：`YQ-QQC`→`master-mp-test`，`YQ-CAR`→`master-mp-car-test` |
+
+示例：
+
+```json
+{
+  "timestamp": "2026-11-17T15:00:00+08:00",
+  "project": "yeqiao-mobile",
+  "source_branch": "feat/mp-首页改版",
+  "merge": {
+    "target": "master-mp-car-test",
+    "result": "success"
+  },
+  "release": {
+    "provider": "qqc-miniprogram",
+    "project_id": "YQ-CAR",
+    "application": "车辆交易市场",
+    "environment": "test",
+    "result": "success"
+  },
+  "source": "explicit",
+  "result": "success",
+  "commit_id": "0ca7ef7ab8064312c9f4db19b0e0a24e52a05950",
+  "build_commit": "0ca7ef7ab"
+}
+```
+
+**本次升级之前的历史记录没有 `project_id` 字段**，那些记录全部是乔乔车小程序（`YQ-QQC`），
+推断时按此处理，但**不要回写修改历史记录文件**。
 
 ---
 
@@ -671,4 +762,8 @@ Memory 不是静态规则。
 ⚠️ 合并代码遇到冲突时，AI 绝对不能自行解决，必须中断并等待用户手动处理。
 
 ⚠️ 用户指定的分支在远程找不到时，AI 绝对不能猜测/创建/跳过，必须中断并等待用户确认分支是否已 push 或名称是否正确。
+
+⚠️ 小程序发布必须明确是哪个 project（YQ-QQC / YQ-CAR），服务不会默认。合并目标必须与 project 对应（YQ-QQC→master-mp-test，YQ-CAR→master-mp-car-test）。
+
+⚠️ 小程序构建的结束条件是 isBuilding === false 且 queuePosition === null，只看 isBuilding 会把排队中的应用误判成已完成。
 ```
