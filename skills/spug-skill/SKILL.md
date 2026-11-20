@@ -1,11 +1,24 @@
 ---
 name: spug-skill
-description: Use this skill when you need to log into a Spug deployment platform with username and password, list authorized apps and deploy configs, create release requests for a target app and environment, trigger publish, and poll release status from a CLI written in TypeScript and executed with npx tsx.
+description: "【已废弃 / Deprecated】Spug 发布平台 CLI（登录、查询应用与发布配置、创建发布单、触发发布、轮询状态）。已停止维护，请改用 DSH 插件市场的 dsh-plugin-yq-release：https://github.com/iShawnWang/dsh-market"
 ---
+
+> ## ⚠️ 本 Skill 已废弃（Deprecated）
+>
+> 本 Skill 已停止维护，代码不再更新，请不要再使用。
+>
+> 请改用 **DSH 插件市场**：[dsh-market](https://github.com/iShawnWang/dsh-market)
+> 在其中安装 `dsh-plugin-yq-release`（一句话把分支发到测试环境：自动合并 GitLab、发布 Spug 前端或触发小程序构建，并记录每次发布）。
+>
+> 添加市场索引源步骤：
+> 1. DSH → 插件 → 实验性插件 → 开启「自定义插件索引」
+> 2. 插件 → 发现 → 管理索引源… → 粘贴索引地址：
+>    - 任意地区：`https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json`
+>    - 中国大陆：`https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/index.json`
 
 # Spug CLI Skill
 
-This skill provides a zero-runtime-dependency TypeScript CLI for Spug.
+This skill provides a zero-runtime-dependency TypeScript CLI for Spug（已废弃，见上方提示）。
 
 ## Initialization (Required Before First Action)
 

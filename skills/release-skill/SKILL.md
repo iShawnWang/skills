@@ -1,10 +1,22 @@
 ---
 name: release-skill
 description: |
-  用于软件发版的编排 Skill。
-  负责协调 GitLab 分支合并、Spug 发布以及 qqc-miniprogram-mcp-server 小程序发布。
-  通过持久化 Memory 记录历史发版操作，让 AI 能够根据过去的操作习惯推断当前发版方式。
+  【已废弃】用于软件发版的编排 Skill（协调 GitLab 分支合并、Spug 发布、小程序发布）。
+  已停止维护，请改用 DSH 插件市场的 dsh-plugin-yq-release：https://github.com/iShawnWang/dsh-market
 ---
+
+> ## ⚠️ 本 Skill 已废弃（Deprecated）
+>
+> 本 Skill 已停止维护，代码不再更新，请不要再使用。
+>
+> 请改用 **DSH 插件市场**：[dsh-market](https://github.com/iShawnWang/dsh-market)
+> 在其中安装 `dsh-plugin-yq-release`（一句话把分支发到测试环境：自动合并 GitLab、发布 Spug 前端或触发小程序构建，并记录每次发布）。
+>
+> 添加市场索引源步骤：
+> 1. DSH → 插件 → 实验性插件 → 开启「自定义插件索引」
+> 2. 插件 → 发现 → 管理索引源… → 粘贴索引地址：
+>    - 任意地区：`https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json`
+>    - 中国大陆：`https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/index.json`
 
 # Release Skill
 

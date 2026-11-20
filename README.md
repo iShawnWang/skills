@@ -2,9 +2,16 @@
 
 这是一个 AI 技能仓库，包含了一系列用于增强 AI 助手能力的自动化脚本、工作流和集成方案。
 
+> ⚠️ **已废弃的 Skill**
+> `gitlab-skill`、`release-skill`、`spug-skill` 已停止维护，代码不再更新，请勿再使用。
+> 请改用 **DSH 插件市场**：[dsh-market](https://github.com/iShawnWang/dsh-market)，安装其中的 `dsh-plugin-yq-release`（一句话把分支发到测试环境：自动合并 GitLab、发布 Spug 前端或触发小程序构建，并记录每次发布）。
+> 添加索引源：DSH → 插件 → 实验性插件 → 开启「自定义插件索引」；插件 → 发现 → 管理索引源… → 粘贴
+> `https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json`
+> （中国大陆可用 `https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/index.json`）
+
 ## 核心技能
 
-### 1. GitLab 技能 (`gitlab-skill`)
+### 1. GitLab 技能 (`gitlab-skill`) ⚠️ 已废弃
 提供了与 GitLab 实例深度交互的能力，支持：
 - **用户信息查询**: 获取用户权限和 ID。
 - **仓库管理**: 搜索和列出项目。
@@ -21,8 +28,8 @@
 包含一系列提升效率的 Alfred 工作流：
 - **AI Search**: 增强的 AI 搜索工作流。
 
-### 4. [Spug 项目发布技能 (`spug-skill`)](https://github.com/iShawnWang/spug-skill)
-用于管理 Spug 项目的自动化构建服务，支持：
+### 4. [Spug 项目发布技能 (`spug-skill`)](https://github.com/iShawnWang/spug-skill) ⚠️ 已废弃
+用于管理 Spug 项目的自动化构建服务（已停止维护，请改用 DSH 插件市场的 `dsh-plugin-yq-release`），支持：
 - **触发构建**: 远程启动 Spug 项目的构建任务（测试版、体验版等）。
 - **状态监控**: 实时查询构建进度。
 - **日志审计**: 获取详细的构建日志。
@@ -59,6 +66,12 @@
 - **订单查询**: 按订单号（SC 开头为主，兼容 P/T 及自定义前缀）跨日期检索订单详情。
 - **模拟支付**: 依据返回的 `payVendorName` 自动选择通知接口（ICBC / SHENGJING / WX）触发支付成功回调。
 - **状态复核**: 通知后自动复查订单状态与支付成功时间。
+
+### 10. 软件发版编排技能 (`release-skill`) ⚠️ 已废弃
+用于软件发版的上层编排 Skill（已停止维护，请改用 DSH 插件市场的 `dsh-plugin-yq-release`），支持：
+- **意图理解**: 解析用户发版请求中的项目、源分支、目标分支与发布环境。
+- **历史推断**: 读取 `memory/releases.jsonl` 历史记录，按用户过往习惯补全缺失信息。
+- **流程编排**: 协调 GitLab 合并、Spug 发布与小程序发布，并记录每次真实结果。
 
 ## 其他内容
 

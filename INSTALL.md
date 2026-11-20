@@ -1,5 +1,12 @@
 # GitLab / Spug / QQC 小程序 CLI Skills 安装引导
 
+> ⚠️ **`gitlab-skill`、`release-skill`、`spug-skill` 已废弃**，请不要再按本文档安装。
+> 请改用 **DSH 插件市场**：[dsh-market](https://github.com/iShawnWang/dsh-market)，安装其中的 `dsh-plugin-yq-release`。
+> 添加索引源：DSH → 插件 → 实验性插件 → 开启「自定义插件索引」；插件 → 发现 → 管理索引源… → 粘贴
+> `https://raw.githubusercontent.com/iShawnWang/dsh-market/main/market/index.json`
+> （中国大陆可用 `https://gcore.jsdelivr.net/gh/iShawnWang/dsh-market@main/market/index.json`）
+> 以下内容仅作历史留存。
+
 ---
 
 ## 📋 第一步：确认 AI 工具支持
